@@ -23,7 +23,7 @@ pip3 install cupy
 ## Example
 ### Generate SBM Synthetic graph
 - Generate a synthetic graph to analyse with SBM:
-```
+```python
 from sparsebm import generate_bernouilli_SBM
 import numpy as np
 from scipy import optimize
@@ -45,7 +45,7 @@ graph, cluster_indicator, = (data["X"], data["Y"])
 
 ### Infere with sparsebm SBM_bernouilli:
  - Use the bernouilli Stochastic Bloc Model:
-```
+```python
     from sparsebm import SBM_bernouilli
 
     model = SBM_bernouilli(
@@ -65,7 +65,7 @@ To use GPU acceleration, CUPY needs to be installed and replace gpu_number to th
 
 ### Generate LBM Synthetic graph
 - Generate a synthetic graph to analyse with LBM:
-```
+``` python
     from sparsebm import generate_bernouilli_LBM
     import numpy as np
 
@@ -93,9 +93,9 @@ To use GPU acceleration, CUPY needs to be installed and replace gpu_number to th
 ### Infere with sparsebm LBM_bernouilli:
  - Use the bernouilli Latent Bloc Model:
 
-```
+``` python
     from sparsebm import LBM_bernouilli
-    
+
     model = LBM_bernouilli(
         nb_row_clusters,
         nb_column_clusters,

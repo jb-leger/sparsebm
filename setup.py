@@ -37,7 +37,7 @@ setup(
     description="An implementation of Stochastic Bloc model and Latent Block model efficient with sparse matrices.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/pypa/sampleproject",
+    url="https://github.com/gfrisch/sparsebm",
     author="Gabriel Frisch",
     author_email="gabriel.frisch@hds.utc.fr",
     classifiers=[  # Optional
@@ -87,7 +87,7 @@ setup(
     #
     # Similar to `install_requires` above, these must be valid existing
     # projects.
-    extras_require={"gpu": ["cupy"]},  # Optional
+    extras_require={"gpu": ["cupy"], "test": ["pytest"]},  # Optional
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # `pip` to create the appropriate form of executable for the target
