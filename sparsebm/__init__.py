@@ -2,7 +2,7 @@ __title__ = "sparsebm"
 __author__ = "Gabriel Frisch"
 __licence__ = "MIT"
 
-version_info = (0, 1)
+version_info = (0, 2)
 __version__ = ".".join(map(str, version_info))
 
 from .lbm import LBM_bernouilli
