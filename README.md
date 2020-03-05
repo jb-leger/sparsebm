@@ -24,21 +24,18 @@ pip3 install cupy
 ### Generate SBM Synthetic graph
 - Generate a synthetic graph to analyse with SBM:
 ```python
-from sparsebm import generate_bernouilli_SBM
 import numpy as np
-from scipy import optimize
+from sparsebm import generate_bernouilli_SBM
+#
+# Define the properties of your graph
+#
 number_of_nodes = 10 ** 3
 number_of_clusters = 4
-# Define the properties of your graph
 cluster_proportions = np.ones(number_of_clusters) / number_of_clusters
-degree_wanted = 20
-connection_probabilities = np.array([[8, 3, 1, 5], [3, 6, 0, 0], [1, 0, 9, 2], [5, 0, 2, 7]])
-# The connection_probabilities are adapted to get the desired node degree
-def f(x, number_of_nodes, pi, degree_wanted):
-    return np.abs((connection_probabilities / (x * number_of_nodes)).mean() * number_of_nodes - degree_wanted)
-res = optimize.minimize_scalar(lambda x: f(x, number_of_nodes, connection_probabilities, degree_wanted))
-connection_probabilities = connection_probabilities / (res.x * number_of_nodes)
+connection_probabilities = np.array([[0.05, 0.018, 0.006, 0.0307], [0.018, 0.037, 0, 0], [0.006, 0, 0.055, 0.012], [0.0307, 0, 0.012, 0.043]])
+#
 # The graph is generated
+#
 data = generate_bernouilli_SBM(number_of_nodes, number_of_clusters, connection_probabilities, cluster_proportions, symetric=True)
 graph, cluster_indicator, = (data["X"], data["Y"])
 ```
@@ -68,16 +65,18 @@ To use GPU acceleration, CUPY needs to be installed and replace gpu_number to th
 ``` python
     from sparsebm import generate_bernouilli_LBM
     import numpy as np
-
+    #
     # Define the properties of your graph
+    #
     number_of_rows = 10 ** 3
-    number_of_columns = 2* number_of_columns
+    number_of_columns = 2* number_of_rows
     nb_row_clusters, nb_column_clusters = 3, 4
-    row_cluster_proportions = np.ones(nq) / nq
-    column_cluster_proportions = np.ones(nl) / nl
-    connection_probabilities = np.array([[8, 1, 1, 4], [1, 8, 1, 4], [0, 1, 8, 0]]) / (0.08 * number_of_rows)
-
+    row_cluster_proportions = np.ones(nb_row_clusters) / nb_row_clusters
+    column_cluster_proportions = np.ones(nb_column_clusters) / nb_column_clusters
+    connection_probabilities = np.array([[0.1, 0.0125, 0.0125, 0.05], [0.0125, 0.1, 0.0125, 0.05], [0, 0.0125, 0.1, 0]])
+    #
     # The graph is generated
+    #
     data = generate_bernouilli_LBM(
             number_of_rows,
             number_of_columns,
