@@ -182,7 +182,7 @@ class LBM_bernouilli:
         n1, n2 = X.shape
         self._nb_rows = n1
         self._nb_cols = n2
-        indices_ones = self._np.asarray(X.nonzero())
+        indices_ones = self._np.asarray(list(X.nonzero()))
         try:
             # Initialize and start to run each for a while.
 

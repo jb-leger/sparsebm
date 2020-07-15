@@ -158,7 +158,7 @@ class SBM_bernouilli:
         n, n2 = X.shape
         assert n == n2, "Entry matrix is not squared"
         self._nb_rows = n
-        indices_ones = self._np.asarray(X.nonzero())
+        indices_ones = self._np.asarray(list(X.nonzero()))
         try:
             # Initialize and start to run each for a while.
 
