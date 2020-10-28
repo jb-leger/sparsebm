@@ -271,7 +271,21 @@ class SBM_bernouilli:
         success = False
 
         if init_params:
-            (pi, alpha, tau) = init_params
+            if init_params is True:
+                if (
+                    self._pi is not None
+                    and self._alpha is not None
+                    and self._tau is not None
+                ):
+                    alpha, tau, pi = (
+                        self._np.asarray(self._alpha),
+                        self._np.asarray(self._tau),
+                        self._np.asarray(self._pi),
+                    )
+                else:
+                    assert False
+            else:
+                (pi, alpha, tau) = init_params
         else:
             alpha, tau, pi = self._init_bernouilli_SBM_random(
                 n, self._n_clusters, len(indices_ones)
@@ -300,6 +314,13 @@ class SBM_bernouilli:
             print(
                 f"Run {self._run_number:3d} / {self._nb_runs_to_perform:3d} \t success : {success} \t log-like: {ll.get()  if self.use_gpu else ll:.4f} \t nb_iter: {iteration:5d}"
             )
+
+        if in_place:
+            self._loglikelihood = ll.get() if self.use_gpu else ll
+            self._trained_successfully = True
+            self._pi = pi.get() if self.use_gpu else pi
+            self._alpha = alpha.get() if self.use_gpu else alpha
+            self._tau = tau.get() if self.use_gpu else tau
 
         return success, ll, pi, alpha, tau
 

@@ -331,7 +331,25 @@ class LBM_bernouilli:
         success = False
 
         if init_params:
-            (pi, alpha_1, alpha_2, tau_1, tau_2) = init_params
+            if init_params is True:
+                if (
+                    self._pi is not None
+                    and self._alpha_1 is not None
+                    and self._alpha_2 is not None
+                    and self._tau_1 is not None
+                    and self._tau_2 is not None
+                ):
+                    alpha_1, alpha_2, tau_1, tau_2, pi = (
+                        self._np.asarray(self._alpha_1),
+                        self._np.asarray(self._alpha_2),
+                        self._np.asarray(self._tau_1),
+                        self._np.asarray(self._tau_2),
+                        self._np.asarray(self._pi),
+                    )
+                else:
+                    assert False
+            else:
+                (pi, alpha_1, alpha_2, tau_1, tau_2) = init_params
         else:
             alpha_1, alpha_2, tau_1, tau_2, pi = self._init_bernouilli_LBM_random(
                 n1,
