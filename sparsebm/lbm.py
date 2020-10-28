@@ -3,6 +3,7 @@ import progressbar
 import numpy as np
 from heapq import heappush, heappushpop
 from itertools import count
+import copy
 
 try:
     import cupy
@@ -116,25 +117,33 @@ class LBM_bernouilli:
     @property
     def row_group_membership_probability(self):
         """array_like: Returns the row group membership probabilities"""
-        assert self._trained_successfully == True, "Model not trained successfully"
+        assert (
+            self._trained_successfully == True
+        ), "Model not trained successfully"
         return self._alpha_1
 
     @property
     def column_group_membership_probability(self):
         """array_like: Returns the column group membership probabilities"""
-        assert self._trained_successfully == True, "Model not trained successfully"
+        assert (
+            self._trained_successfully == True
+        ), "Model not trained successfully"
         return self._alpha_2
 
     @property
     def row_labels(self):
         """array_like: Returns the row labels"""
-        assert self._trained_successfully == True, "Model not trained successfully"
+        assert (
+            self._trained_successfully == True
+        ), "Model not trained successfully"
         return self._tau_1.argmax(1)
 
     @property
     def column_labels(self):
         """array_like: Returns the column labels"""
-        assert self._trained_successfully == True, "Model not trained successfully"
+        assert (
+            self._trained_successfully == True
+        ), "Model not trained successfully"
         return self._tau_2.argmax(1)
 
     @property
@@ -146,7 +155,9 @@ class LBM_bernouilli:
     @property
     def column_predict_proba(self):
         """array_like: Returns the predicted column classes membership probabilities"""
-        assert self._trained_successfully == True, "Model not trained successfully"
+        assert (
+            self._trained_successfully == True
+        ), "Model not trained successfully"
         return self._tau_2
 
     @property
@@ -154,14 +165,16 @@ class LBM_bernouilli:
         """bool: Returns the predicted column classes membership probabilities"""
         return self._trained_successfully
 
-    def get_ICL(self):
+    def get_ICL(self) -> float:
         """Computation of the ICL criteria that can be used for model selection.
         Returns
         -------
         float
             value of the ICL criteria.
         """
-        assert self._trained_successfully == True, "Model not trained successfully"
+        assert (
+            self._trained_successfully == True
+        ), "Model not trained successfully"
         return (
             self._loglikelihood
             - (self._n_row_clusters - 1) / 2 * np.log(self._nb_rows)
@@ -171,7 +184,7 @@ class LBM_bernouilli:
             * np.log(self._nb_cols * self._nb_rows)
         )
 
-    def fit(self, X):
+    def fit(self, X) -> None:
         """Perform co-clustering by direct maximization of graph modularity.
 
         Parameters
@@ -210,7 +223,15 @@ class LBM_bernouilli:
                 if self.verbosity > 0:
                     bar.update(run_number)
                 self._run_number = run_number
-                (success, ll, pi, alpha_1, alpha_2, tau_1, tau_2) = self._fit_single(
+                (
+                    success,
+                    ll,
+                    pi,
+                    alpha_1,
+                    alpha_2,
+                    tau_1,
+                    tau_2,
+                ) = self._fit_single(
                     indices_ones, n1, n2, early_stop=self.nb_iter_early_stop
                 )
                 calculation_result = [
@@ -228,7 +249,9 @@ class LBM_bernouilli:
                     heappushpop(best_inits, calculation_result)
             if self.verbosity > 0:
                 bar.finish()
-                print("---------- START TRAINING BEST INITIALIZATIONS ---------- ")
+                print(
+                    "---------- START TRAINING BEST INITIALIZATIONS ---------- "
+                )
                 bar = progressbar.ProgressBar(
                     max_value=len(best_inits),
                     widgets=[
@@ -258,7 +281,15 @@ class LBM_bernouilli:
                     init[5],
                     init[6],
                 )
-                (success, ll, pi, alpha_1, alpha_2, tau_1, tau_2) = self._fit_single(
+                (
+                    success,
+                    ll,
+                    pi,
+                    alpha_1,
+                    alpha_2,
+                    tau_1,
+                    tau_2,
+                ) = self._fit_single(
                     indices_ones,
                     n1,
                     n2,
@@ -278,10 +309,16 @@ class LBM_bernouilli:
         finally:
             if self.verbosity > 0:
                 bar.finish()
-        if self._trained_successfully:
-            print("Trained.")
 
-    def _fit_single(self, indices_ones, n1, n2, early_stop=None, init_params=None):
+    def _fit_single(
+        self,
+        indices_ones,
+        n1,
+        n2,
+        early_stop=None,
+        init_params=None,
+        in_place=False,
+    ):
         """Perform one run of the LBM_bernouilli algorithm with one random initialization.
 
         Parameters
@@ -297,7 +334,11 @@ class LBM_bernouilli:
             (pi, alpha_1, alpha_2, tau_1, tau_2) = init_params
         else:
             alpha_1, alpha_2, tau_1, tau_2, pi = self._init_bernouilli_LBM_random(
-                n1, n2, self._n_row_clusters, self._n_column_clusters, len(indices_ones)
+                n1,
+                n2,
+                self._n_row_clusters,
+                self._n_column_clusters,
+                len(indices_ones),
             )
 
         # Repeat EM step until convergence.
@@ -330,9 +371,20 @@ class LBM_bernouilli:
                 f"Run {self._run_number:3d} / {self._nb_runs_to_perform:3d} \t success : {success} \t log-like: {ll.get()  if self.use_gpu else ll:.4f} \t nb_iter: {iteration:5d}"
             )
 
+        if in_place:
+            self._loglikelihood = ll.get() if self.use_gpu else ll
+            self._trained_successfully = True
+            self._pi = pi.get() if self.use_gpu else pi
+            self._alpha_1 = alpha_1.get() if self.use_gpu else alpha_1
+            self._alpha_2 = alpha_2.get() if self.use_gpu else alpha_2
+            self._tau_1 = tau_1.get() if self.use_gpu else tau_1
+            self._tau_2 = tau_2.get() if self.use_gpu else tau_2
+
         return success, ll, pi, alpha_1, alpha_2, tau_1, tau_2
 
-    def _step_EM(self, indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2, n1, n2):
+    def _step_EM(
+        self, indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2, n1, n2
+    ):
         """Realize EM step. Update both variationnal and model parameters.
 
         Parameters
@@ -408,7 +460,9 @@ class LBM_bernouilli:
         ).sum(0) / (tau_1.sum(0).reshape(nq, 1) * tau_2.sum(0).reshape(1, nl))
         return pi, alpha_1, alpha_2, tau_1, tau_2
 
-    def _compute_likelihood(self, indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2):
+    def _compute_likelihood(
+        self, indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2
+    ):
         """Compute the log-likelihood of the model with the given parameters.
 
         Parameters

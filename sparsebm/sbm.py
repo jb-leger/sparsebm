@@ -91,38 +91,47 @@ class SBM_bernouilli:
         self._nb_runs_to_perform = n_init
 
         self.use_gpu = False
-        self.gpu_number = False
+        self.gpu_number = None
         if gpu_number is not None and gpu_number >= 0:
             if not _CUPY_INSTALLED:
                 self._np = np
                 self.gpu_number = None
-                print("GPU not used as cupy library seems not to be installed", file=sys.stderr)
+                print(
+                    "GPU not used as cupy library seems not to be installed",
+                    file=sys.stderr,
+                )
             elif not cupy.cuda.is_available():
                 self._np = np
                 self.gpu_number = None
                 print("GPU not used as CUDA is not available", file=sys.stderr)
             else:
                 self._np = cupy
-                self.gpu_number = None
                 cupy.cuda.Device(gpu_number).use()
                 self.use_gpu = True
+                self.gpu_number = gpu_number
 
     @property
     def group_membership_probability(self):
         """array_like: Returns the group membership probabilities"""
-        assert self._trained_successfully == True, "Model not trained successfully"
+        assert (
+            self._trained_successfully == True
+        ), "Model not trained successfully"
         return self._alpha
 
     @property
     def labels(self):
         """array_like: Returns the labels"""
-        assert self._trained_successfully == True, "Model not trained successfully"
+        assert (
+            self._trained_successfully == True
+        ), "Model not trained successfully"
         return self._tau.argmax(1)
 
     @property
     def predict_proba(self):
         """array_like: Returns the predicted classes membership probabilities"""
-        assert self._trained_successfully == True, "Model not trained successfully"
+        assert (
+            self._trained_successfully == True
+        ), "Model not trained successfully"
         return self._tau
 
     @property
@@ -137,11 +146,15 @@ class SBM_bernouilli:
         float
             value of the ICL criteria.
         """
-        assert self._trained_successfully == True, "Model must be trained successfully before"
+        assert (
+            self._trained_successfully == True
+        ), "Model must be trained successfully before"
         return (
             self._loglikelihood
             - (self._n_clusters - 1) / 2 * np.log(self._nb_rows)
-            - (self._n_clusters**2)/ 2 * np.log(self._nb_rows*(self._nb_rows-1))
+            - (self._n_clusters ** 2)
+            / 2
+            * np.log(self._nb_rows * (self._nb_rows - 1))
         )
 
     def fit(self, X):
@@ -189,20 +202,16 @@ class SBM_bernouilli:
                 (success, ll, pi, alpha, tau) = self._fit_single(
                     indices_ones, n, early_stop=self.nb_iter_early_stop
                 )
-                calculation_result = [
-                    ll,
-                    next(tiebreaker),
-                    pi,
-                    alpha,
-                    tau,
-                ]
+                calculation_result = [ll, next(tiebreaker), pi, alpha, tau]
                 if len(best_inits) < max(1, int(self.n_init_total_run)):
                     heappush(best_inits, calculation_result)
                 else:
                     heappushpop(best_inits, calculation_result)
             if self.verbosity > 0:
                 bar.finish()
-                print("---------- START TRAINING BEST INITIALIZATIONS ---------- ")
+                print(
+                    "---------- START TRAINING BEST INITIALIZATIONS ---------- "
+                )
                 bar = progressbar.ProgressBar(
                     max_value=len(best_inits),
                     widgets=[
@@ -225,16 +234,10 @@ class SBM_bernouilli:
                 if self.verbosity > 0:
                     bar.update(run_number)
 
-                (pi, alpha, tau) = (
-                    init[2],
-                    init[3],
-                    init[4],
-                )
+                (pi, alpha, tau) = (init[2], init[3], init[4])
 
                 (success, ll, pi, alpha, tau) = self._fit_single(
-                    indices_ones,
-                    n,
-                    init_params=(pi, alpha, tau,),
+                    indices_ones, n, init_params=(pi, alpha, tau)
                 )
 
                 if success and ll > self._loglikelihood:
@@ -248,10 +251,15 @@ class SBM_bernouilli:
         finally:
             if self.verbosity > 0:
                 bar.finish()
-        if self._trained_successfully:
-            print("Trained.")
 
-    def _fit_single(self, indices_ones, n, early_stop=None, init_params=None):
+    def _fit_single(
+        self,
+        indices_ones,
+        n,
+        early_stop=None,
+        init_params=None,
+        in_place=False,
+    ):
         """Perform one run of the SBM_bernouilli algorithm with one random initialization.
 
         Parameters
@@ -274,7 +282,7 @@ class SBM_bernouilli:
             if early_stop and iteration >= early_stop:
                 ll = self._compute_likelihood(indices_ones, pi, alpha, tau)
                 break
-            if iteration % 10 == 0:
+            if iteration % 5 == 0:
                 ll = self._compute_likelihood(indices_ones, pi, alpha, tau)
                 if self._np.abs(old_ll - ll) < self.tol:
                     success = True
@@ -285,7 +293,7 @@ class SBM_bernouilli:
                         f"\t EM Iter: {iteration:5d}  \t  log-like:{ll.get() if self.use_gpu else ll:.4f} \t diff:{self._np.abs(old_ll - ll).get() if self.use_gpu else self._np.abs(old_ll - ll):.6f}"
                     )
                 old_ll = ll
-            pi, alpha, tau= self._step_EM(indices_ones, pi, alpha, tau, n)
+            pi, alpha, tau = self._step_EM(indices_ones, pi, alpha, tau, n)
         else:
             success = True
         if self.verbosity > 1:
@@ -325,8 +333,8 @@ class SBM_bernouilli:
                 * (self._np.log(pi) - self._np.log(1 - pi)).reshape(1, nq, nq)
             ).sum(2)
             + self._np.log(alpha.reshape(1, nq))
-            + tau.sum(0) @ np.log(1-pi.T)
-            - tau @ np.log(1-pi.T)
+            + tau.sum(0) @ np.log(1 - pi.T)
+            - tau @ np.log(1 - pi.T)
         )
 
         # For computationnal stability reasons 1.
@@ -344,9 +352,9 @@ class SBM_bernouilli:
         pi = (
             tau[indices_ones[0]].reshape(-1, nq, 1)
             * tau[indices_ones[1]].reshape(-1, 1, nq)
-        ).sum(0) / ((tau_sum.reshape((-1,1))* tau_sum) - tau.T @ tau )
+        ).sum(0) / ((tau_sum.reshape((-1, 1)) * tau_sum) - tau.T @ tau)
 
-        return pi, alpha, tau,
+        return pi, alpha, tau
 
     def _compute_likelihood(self, indices_ones, pi, alpha, tau):
         """Compute the log-likelihood of the model with the given parameters.
@@ -371,9 +379,12 @@ class SBM_bernouilli:
                     - self._np.log(1 - pi).reshape(1, nq, nq)
                 )
             ).sum()
-            + (((tau_sum.reshape((-1,1))* tau_sum) - tau.T @ tau ) * self._np.log(1-pi)).sum()
+            + (
+                ((tau_sum.reshape((-1, 1)) * tau_sum) - tau.T @ tau)
+                * self._np.log(1 - pi)
+            ).sum()
         )
-        return ll/2 if self._symetric else ll
+        return ll / 2 if self._symetric else ll
 
     def _init_bernouilli_SBM_random(self, n1, nq, nb_ones):
         """Randomly initialize the SBM bernouilli model and variationnal parameters.
@@ -393,12 +404,12 @@ class SBM_bernouilli:
         tau /= tau.sum(axis=1).reshape(n1, 1)  # Re-Normalize.
         pi = self._np.random.uniform(0, 2 * nb_ones / (n1 * n1), (nq, nq))
         if self._symetric:
-            pi = (pi@pi.T)/2
+            pi = (pi @ pi.T) / 2
 
         return (alpha.flatten(), tau, pi)
 
     def __repr__(self):
-        return f"""LBM_bernouilli(
+        return f"""SBM_bernouilli(
                     n_clusters={self._n_clusters},
                     max_iter={self.max_iter},
                     n_init={self.n_init},
