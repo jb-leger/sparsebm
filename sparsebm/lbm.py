@@ -546,3 +546,30 @@ class LBM_bernouilli:
                     verbosity={self.verbosity},
                     gpu_number={self.gpu_number},
                 )"""
+
+    def copy(self):
+        """Returns a copy of the model.
+        """
+        model = LBM_bernouilli(
+            self._n_row_clusters,
+            self._n_column_clusters,
+            self.max_iter,
+            self.n_init,
+            self.n_init_total_run,
+            self.nb_iter_early_stop,
+            self.tol,
+            self.verbosity,
+            self.gpu_number,
+        )
+        model._nb_rows = self._nb_rows
+        model._nb_cols = self._nb_cols
+        model._loglikelihood = self._loglikelihood
+        model._trained_successfully = self._trained_successfully
+        model._pi = copy.copy(self._pi)
+        model._alpha_1 = copy.copy(self._alpha_1)
+        model._alpha_2 = copy.copy(self._alpha_2)
+        model._tau_1 = copy.copy(self._tau_1)
+        model._tau_2 = copy.copy(self._tau_2)
+        model._run_number = self._run_number
+        model._nb_runs_to_perform = self._nb_runs_to_perform
+        return model

@@ -1,4 +1,5 @@
 import sys
+import copy
 import progressbar
 import numpy as np
 from heapq import heappush, heappushpop
@@ -440,3 +441,28 @@ class SBM_bernouilli:
                     verbosity={self.verbosity},
                     gpu_number={self.gpu_number},
                 )"""
+
+    def copy(self):
+        """Returns a copy of the model.
+        """
+        model = SBM_bernouilli(
+            self._n_clusters,
+            symetric=self._symetric,
+            max_iter=self.max_iter,
+            n_init=self.n_init,
+            n_init_total_run=self.n_init_total_run,
+            n_iter_early_stop=self.nb_iter_early_stop,
+            tol=self.tol,
+            verbosity=self.verbosity,
+            gpu_number=self.gpu_number,
+        )
+        model._nb_rows = self._nb_rows
+        model._loglikelihood = self._loglikelihood
+        model._trained_successfully = self._trained_successfully
+        model._pi = copy.copy(self._pi)
+        model._alpha = copy.copy(self._alpha)
+        model._tau = copy.copy(self._tau)
+        model._run_number = self._run_number
+        model._nb_runs_to_perform = self._nb_runs_to_perform
+
+        return model
