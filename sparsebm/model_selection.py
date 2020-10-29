@@ -195,6 +195,20 @@ class ModelSelection:
             if model_flag[flag_key]:
                 if classes_key in self.model_explored:
                     models_to_explore.append(self.model_explored[classes_key])
+                    if (
+                        icl_model.model_explored[classes_key]["icl"]
+                        > best_model["icl"]
+                    ):
+                        best_model = icl_model.model_explored[classes_key]
+                        nnq_best_model = (
+                            (
+                                best_model["model"]._n_row_clusters
+                                + best_model["model"]._n_column_clusters
+                            )
+                            if self._model_type == "LBM"
+                            else best_model["model"]._n_clusters
+                        )
+
                     print(
                         "\t Already explored models from {} classes".format(
                             nnq
