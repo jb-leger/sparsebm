@@ -8,7 +8,7 @@ from utils import (
     lbm_split_group,
     sbm_split_group,
 )
-from typing import Any, Tuple, Union, Optional, Literal
+from typing import Any, Tuple, Union, Optional
 from scipy.sparse import spmatrix
 
 
@@ -22,14 +22,14 @@ class ModelSelection:
     def __init__(
         self,
         graph: Union[spmatrix, np.ndarray],
-        model_type: Literal["LBM", "SBM"],
+        model_type: str,
         gpu_number: Optional[int] = 0,
         symetric: Optional[bool] = False,
     ) -> None:
         """
         Parameters
         ----------
-        graph : numpy matrix or scipy sparse matrix, shape=(n_samples, n_features) for the LBM or (n_samples, n_samples) for the SBM
+        graph : numpy.ndarray or scipy.sparse.spmatrix, shape=(n_samples, n_features) for the LBM or (n_samples, n_samples) for the SBM
             Matrix to be analyzed
         model_type : str
             Either "LBM" or "SBM" the type of co-clustering model to use.
@@ -130,7 +130,7 @@ class ModelSelection:
                     symetric={self._symetric},
                 )"""
 
-    def _explore_strategy(self, strategy: Literal["merge", "split"]):
+    def _explore_strategy(self, strategy: str):
         """ Perform a splitting or merging strategy.
 
         The splitting strategy stops when the number of classes is greater
@@ -278,7 +278,10 @@ class ModelSelection:
         return model_explored
 
     def _select_and_train_best_model(
-        self, model, strategy: Literal["merge", "split"], type: int = None
+        self,
+        model: Union[LBM_bernouilli, SBM_bernouilli],
+        strategy: str,
+        type: int = None,
     ) -> Tuple[float, Union[LBM_bernouilli, SBM_bernouilli]]:
         """ Given model and a strategy, perform all possible merges/splits of
         classes and return the best one.
