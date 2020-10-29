@@ -7,4 +7,5 @@ __version__ = ".".join(map(str, version_info))
 
 from .lbm import LBM_bernouilli
 from .sbm import SBM_bernouilli
+from .model_selection import ModelSelection
 from .graph_generator import generate_bernouilli_LBM, generate_bernouilli_SBM

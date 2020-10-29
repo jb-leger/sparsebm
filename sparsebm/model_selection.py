@@ -2,7 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from lbm import LBM_bernouilli
 from sbm import SBM_bernouilli
-from utils import (
+from . import SBM_bernouilli, LBM_bernouilli
+from .utils import (
     lbm_merge_group,
     sbm_merge_group,
     lbm_split_group,

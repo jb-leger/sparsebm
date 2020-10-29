@@ -1,4 +1,6 @@
 import numpy as np
+from . import LBM_bernouilli, SBM_bernouilli
+from typing import Any, Tuple, Union, Optional
 
 
 def lbm_merge_group(model, type, idx_group_1, idx_group_2, indices_ones):
