@@ -199,10 +199,10 @@ class ModelSelection:
                 if classes_key in self.model_explored:
                     models_to_explore.append(self.model_explored[classes_key])
                     if (
-                        icl_model.model_explored[classes_key]["icl"]
+                        self.model_explored[classes_key]["icl"]
                         > best_model["icl"]
                     ):
-                        best_model = icl_model.model_explored[classes_key]
+                        best_model = self.model_explored[classes_key]
                         nnq_best_model = (
                             (
                                 best_model["model"]._n_row_clusters
