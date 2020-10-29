@@ -94,6 +94,14 @@ class ModelSelection:
             }
         }
 
+    @property
+    def selected_model(self) -> Union[LBM_bernouilli, SBM_bernouilli]:
+        """sparsebm.LBM_bernouilli or sparsebm.SBM_bernouilli: Returns the optimal model explore so far."""
+        return max(
+            [m["model"] for m in self.model_explored.values()],
+            key=lambda x: x.get_ICL(),
+        )
+
     def fit(self) -> Union[LBM_bernouilli, SBM_bernouilli]:
         """ Perform model selection of the co-clustering.
 
@@ -113,13 +121,11 @@ class ModelSelection:
                 self.model_explored = self._explore_strategy(strategy="split")
                 print("Merging")
                 self.model_explored = self._explore_strategy(strategy="merge")
+
         except KeyboardInterrupt:
             pass
 
-        return sorted(
-            [m["model"] for m in self.model_explored.values()],
-            key=lambda x: x.get_ICL(),
-        )[-1]
+        return self.selected_model
 
     def __repr__(self) -> str:
         return f"""ModelSelection(
