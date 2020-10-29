@@ -3,7 +3,32 @@ from . import LBM_bernouilli, SBM_bernouilli
 from typing import Any, Tuple, Union, Optional
 
 
-def lbm_merge_group(model, type, idx_group_1, idx_group_2, indices_ones):
+def lbm_merge_group(
+    model: LBM_bernouilli,
+    type: int,
+    idx_group_1: int,
+    idx_group_2: int,
+    indices_ones: np.ndarray,
+) -> Tuple[float, LBM_bernouilli]:
+    """ Given a LBM model, returns the model obtained from the merge of the specified classes.
+
+    Parameters
+    ----------
+    model : sparsebm.LBM_bernouilli
+        The model from which the merge is realized.
+    idx_group_1 : int
+        index of the first row/column class to merge.
+    idx_group_2 : int
+        index of the second row/column class to merge.
+    type : int
+        0 for rows merging, 1 for columns merging.
+    indices_ones : numpy.ndarray
+        Indices of elements that are non-zero in the original data matrix.
+    Returns
+    -------
+    tuple of (float, sparsebm.LBM_bernouilli)
+        The ICL value and the model obtained from the merge of two classes.
+    """
     if type != 0 and type != 1:
         print("Type error in merge group")
         assert False
@@ -59,7 +84,29 @@ def lbm_merge_group(model, type, idx_group_1, idx_group_2, indices_ones):
     return (model.get_ICL(), model)
 
 
-def sbm_merge_group(model, idx_group_1, idx_group_2, indices_ones):
+def sbm_merge_group(
+    model: SBM_bernouilli,
+    idx_group_1: int,
+    idx_group_2: int,
+    indices_ones: np.ndarray,
+) -> Tuple[float, SBM_bernouilli]:
+    """ Given a SBM model, returns the model obtained from the merge of the specified classes.
+
+    Parameters
+    ----------
+    model : sparsebm.SBM_bernouilli
+        The model from which the merge is realized.
+    idx_group_1 : int
+        index of the first row/column class to merge.
+    idx_group_2 : int
+        index of the second row/column class to merge.
+    indices_ones : numpy.ndarray
+        Indices of elements that are non-zero in the original data matrix.
+    Returns
+    -------
+    tuple of (float, sparsebm.SBM_bernouilli)
+        The ICL value and the model obtained from the merge of two classes.
+    """
     eps = 1e-4
     model._n_clusters -= 1
     t = model._tau
@@ -95,7 +142,35 @@ def sbm_merge_group(model, idx_group_1, idx_group_2, indices_ones):
     return (model.get_ICL(), model)
 
 
-def lbm_split_group(model, row_col_degrees, type, index, indices_ones):
+def lbm_split_group(
+    model: LBM_bernouilli,
+    row_col_degrees: Tuple[np.ndarray],
+    type: int,
+    index: int,
+    indices_ones: np.array,
+) -> Tuple[float, LBM_bernouilli]:
+    """ Given a LBM model, returns the model obtained from the split of the specified class.
+
+    The specified class is splitted according to its median of degree.
+
+    Parameters
+    ----------
+    model : sparsebm.LBM_bernouilli
+        The model from which the merge is realized.
+
+    row_col_degrees: tuple of numpy.ndarray
+        Tuple of two arrays that contains the row and column degrees of the original data matrix
+    type : int
+        0 for rows splitting, 1 for columns splitting.
+    index : int
+        index of the row/column class to split.
+    indices_ones : numpy.ndarray
+        Indices of elements that are non-zero in the original data matrix.
+    Returns
+    -------
+    tuple of (float, sparsebm.LBM_bernouilli)
+        The ICL value and the model obtained from the split of the specified class.
+    """
     if type != 0 and type != 1:
         print("Type error in split group")
         assert False
@@ -146,7 +221,31 @@ def lbm_split_group(model, row_col_degrees, type, index, indices_ones):
     return (model.get_ICL(), model)
 
 
-def sbm_split_group(model, degrees, index, indices_ones):
+def sbm_split_group(
+    model: SBM_bernouilli,
+    degrees: np.ndarray,
+    index: int,
+    indices_ones: np.array,
+):
+    """ Given a SBM model, returns the model obtained from the split of the specified class.
+
+    The specified class is splitted according to its median of degree.
+
+    Parameters
+    ----------
+    model : sparsebm.SBM_bernouilli
+        The model from which the merge is realized.
+    degrees: numpy.ndarray
+        Array that contains the degrees of the original data matrix.
+    index : int
+        index of the class to split.
+    indices_ones : numpy.ndarray
+        Indices of elements that are non-zero in the original data matrix.
+    Returns
+    -------
+    tuple of (float, sparsebm.SBM_bernouilli)
+        The ICL value and the model obtained from the split of the specified class.
+    """
     eps = 1e-4
     model._n_clusters += 1
     t = model._tau
