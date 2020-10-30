@@ -1,6 +1,8 @@
 import numpy as np
+import scipy
 from . import LBM_bernouilli, SBM_bernouilli
 from typing import Any, Tuple, Union, Optional
+from scipy.sparse import coo_matrix
 
 
 def lbm_merge_group(
@@ -280,3 +282,23 @@ def sbm_split_group(
     model._loglikelihood = ll if model.use_gpu else ll
 
     return (model.get_ICL(), model)
+
+
+def reorder_rows(X: coo_matrix, idx: np.ndarray) -> None:
+    """ Reorders the rows of the COO sparse matrix given in argument.
+
+    Parameters
+    ----------
+    X : scipy.sparse.coo_matrix
+        The sparse matrix to reorder.
+    idx: numpy.ndarray,  shape=(X.shape[0],)
+        Row indices used to reorder the matrix.
+    """
+    idx = idx.flatten()
+    assert isinstance(
+        X, scipy.sparse.coo_matrix
+    ), "X must be scipy.sparse.coo_matrix"
+    assert X.shape[0] == idx.shape[0], "idx shape[0] must be X shape[0]"
+    idx = np.argsort(idx)
+    idx = np.asarray(idx, dtype=X.row.dtype)
+    X.row = idx[X.row]

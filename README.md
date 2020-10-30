@@ -25,7 +25,7 @@ pip3 install cupy
 - Generate a synthetic graph to analyse with SBM:
 ```python
 import numpy as np
-from sparsebm import generate_bernouilli_SBM
+from sparsebm import generate_bernouilli_SBM_dataset
 #
 # Define the properties of your graph
 #
@@ -36,7 +36,7 @@ connection_probabilities = np.array([[0.05, 0.018, 0.006, 0.0307], [0.018, 0.037
 #
 # The graph is generated
 #
-data = generate_bernouilli_SBM(number_of_nodes, number_of_clusters, connection_probabilities, cluster_proportions, symetric=True)
+data = generate_bernouilli_SBM_dataset(number_of_nodes, number_of_clusters, connection_probabilities, cluster_proportions, symetric=True)
 graph, cluster_indicator, = (data["X"], data["Y"])
 ```
 
@@ -63,7 +63,7 @@ To use GPU acceleration, CUPY needs to be installed and replace gpu_number to th
 ### Generate LBM Synthetic graph
 - Generate a synthetic graph to analyse with LBM:
 ``` python
-    from sparsebm import generate_bernouilli_LBM
+    from sparsebm import generate_bernouilli_LBM_dataset
     import numpy as np
     #
     # Define the properties of your graph
@@ -77,7 +77,7 @@ To use GPU acceleration, CUPY needs to be installed and replace gpu_number to th
     #
     # The graph is generated
     #
-    data = generate_bernouilli_LBM(
+    data = generate_bernouilli_LBM_dataset(
             number_of_rows,
             number_of_columns,
             nb_row_clusters,
