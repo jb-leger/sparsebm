@@ -24,14 +24,15 @@ class ModelSelection:
         model_type: str,
         gpu_number: Optional[int] = 0,
         symetric: Optional[bool] = False,
+        plot: Optional[bool] = True,
     ) -> None:
         """
         Parameters
         ----------
         graph : numpy.ndarray or scipy.sparse.spmatrix, shape=(n_samples, n_features) for the LBM or (n_samples, n_samples) for the SBM
             Matrix to be analyzed
-        model_type : str
-            Either "LBM" or "SBM" the type of co-clustering model to use.
+        model_type : {'LBM', 'SBM'}
+            The type of co-clustering model to use.
         gpu_number : int, optional, default: 0
             Select the index of the GPU. None if no need of GPU.
         symetric : bool, optional, default: False
@@ -53,6 +54,7 @@ class ModelSelection:
         self._model_type = model_type
         self._gpu_number = gpu_number
         self._symetric = symetric
+        self._plot = plot
 
         if model_type == "LBM":
             model = LBM_bernouilli(
@@ -146,8 +148,8 @@ class ModelSelection:
 
         Parameters
         ----------
-        strategy : str
-            The type of strategy. Either 'merge' or 'split'
+        strategy : {'merge', 'split'}
+            The type of strategy.
 
         Returns
         -------
@@ -189,7 +191,10 @@ class ModelSelection:
             )
             model_explored[nnq] = model_flag
 
-            plot_merge_split_graph(self, model_explored, strategy, best_model)
+            if self._plot:
+                plot_merge_split_graph(
+                    self, model_explored, strategy, best_model
+                )
 
             flag_key = (
                 "merge_explored" if strategy == "merge" else "split_explored"
@@ -311,8 +316,8 @@ class ModelSelection:
         ----------
         model : sparsebm.LBM_bernouilli or sparsebm.SBM_bernouilli
             The model from which all merges/splits are tested.
-        strategy : str
-            The type of strategy. Either 'merge' or 'split'
+        strategy : {'merge', 'split'}
+            The type of strategy.
 
         type : int, optional
             0 for rows merging/splitting, 1 for columns merging/splitting
@@ -560,6 +565,7 @@ def plot_merge_split_graph(
             m["model"].get_ICL()
             for m in model_selection.model_explored.values()
         ]
+
         plt.xlim((0, max(10, max(nqs), max(nqs_prev))))
         if strategy == "merge":
             plt.title("Merging strategy")
@@ -569,20 +575,36 @@ def plot_merge_split_graph(
         plt.xlabel("Number of row groups")
         plt.grid()
         plt.scatter(
-            nqs,
-            icls,
-            s=70,
-            c="blue",
-            marker="o",
-            label="Current strategy path",
-        )
-        plt.scatter(
             nqs_prev,
             icls_prev,
             s=100,
             c="grey",
             marker="+",
-            label="Previously strategy path",
+            label="Models explored during previous strategy",
         )
-    plt.legend()
-    plt.pause(0.05)
+        plt.scatter(
+            nqs,
+            icls,
+            s=70,
+            c="orange",
+            marker="o",
+            label="Models explored during current strategy",
+        )
+        plt.scatter(
+            [best_model_current_strategy["model"]._n_clusters],
+            [best_model_current_strategy["icl"]],
+            s=80,
+            c="green",
+            marker="o",
+            label="Optimal model of the current strategy",
+        )
+        plt.scatter(
+            [model_selection.selected_model._n_clusters],
+            [model_selection.selected_model.get_ICL()],
+            s=120,
+            c="black",
+            marker="*",
+            label="Optimal model from all strategies",
+        )
+    plt.pause(0.01)
+    plt.plot()
