@@ -115,7 +115,7 @@ class LBM_bernouilli:
                 self.gpu_number = gpu_number
 
     @property
-    def n_column_clusters(self):
+    def n_row_clusters(self):
         """array_like: Returns the number of row classes"""
         return self._n_row_clusters
 
