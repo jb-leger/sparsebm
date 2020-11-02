@@ -112,6 +112,11 @@ class SBM_bernouilli:
                 self.gpu_number = gpu_number
 
     @property
+    def n_clusters(self):
+        """array_like: Returns the number of classes"""
+        return self._n_clusters
+
+    @property
     def group_membership_probability(self):
         """array_like: Returns the group membership probabilities"""
         assert (

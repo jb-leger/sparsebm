@@ -115,6 +115,16 @@ class LBM_bernouilli:
                 self.gpu_number = gpu_number
 
     @property
+    def n_column_clusters(self):
+        """array_like: Returns the number of row classes"""
+        return self._n_row_clusters
+
+    @property
+    def n_column_clusters(self):
+        """array_like: Returns the number of column classes"""
+        return self._n_column_clusters
+
+    @property
     def row_group_membership_probability(self):
         """array_like: Returns the row group membership probabilities"""
         assert (
