@@ -444,9 +444,13 @@ class ModelSelection:
         return (models[0][1].get_ICL(), models[0][1])
 
 
+# figure = plt.figure(figsize=(5, 1))
+
+
 def plot_merge_split_graph(
     model_selection, model_explored, strategy, best_model_current_strategy
 ):
+    # figure = plt.figure(figsize=(5, 1))
     plt.cla()
     if model_selection._model_type == "LBM":
 
@@ -606,5 +610,6 @@ def plot_merge_split_graph(
             marker="*",
             label="Optimal model from all strategies",
         )
+    plt.legend()
     plt.pause(0.01)
     plt.plot()

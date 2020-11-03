@@ -429,7 +429,9 @@ class SBM_bernouilli:
         tau /= tau.sum(axis=1).reshape(n1, 1)
         tau[tau < eps] = eps
         tau /= tau.sum(axis=1).reshape(n1, 1)  # Re-Normalize.
-        pi = self._np.random.uniform(0, 2 * nb_ones / (n1 * n1), (nq, nq))
+        pi = self._np.random.uniform(
+            2 * nb_ones / (n1 * n1) / 10, 2 * nb_ones / (n1 * n1), (nq, nq)
+        )
         if self._symetric:
             pi = (pi @ pi.T) / 2
 
