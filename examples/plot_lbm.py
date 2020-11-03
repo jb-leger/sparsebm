@@ -107,22 +107,22 @@ reorder_rows(reconstructed_matrix, np.argsort(model.column_labels))
 original_matrix = original_matrix.transpose()
 reconstructed_matrix = reconstructed_matrix.transpose()
 
-figure = plt.figure(1, figsize=(15, 5), constrained_layout=True)
+figure = plt.figure(1, figsize=(8, 5), constrained_layout=True)
 # Plotting the original matrix.
 ax1 = plt.subplot(131)
 ax1.spy(graph, markersize=0.05, marker="*", c="black")
-ax1.set_title("Original data matrix")
+ax1.set_title("Original data matrix\n\n")
 ax1.axis("off")
 # Plotting the original ordered matrix.
 ax2 = plt.subplot(132)
 ax2.spy(original_matrix, markersize=0.05, marker="*", c="black")
-ax2.set_title("Data matrix reordered according to original classes")
+ax2.set_title("Data matrix reordered \naccording to the\n original classes")
 ax2.axis("off")
 # Plotting the matrix reordered by the LBM.
 ax3 = plt.subplot(133)
 ax3.spy(reconstructed_matrix, markersize=0.05, marker="*", c="black")
 ax3.set_title(
-    "Data matrix reordered according to the classes given by the LBM"
+    "Data matrix reordered \naccording to the\n classes given by the LBM"
 )
 ax3.axis("off")
 plt.show()
