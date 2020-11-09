@@ -1,8 +1,211 @@
 import numpy as np
 import scipy
 from . import LBM_bernouilli, SBM_bernouilli
-from typing import Any, Tuple, Union, Optional
+from typing import Tuple, Union, Optional
 from scipy.sparse import coo_matrix
+from scipy.special import comb
+
+
+def ARI(
+    labels_true: Union[np.ndarray, list], labels_pred: Union[np.ndarray, list]
+) -> float:
+    """
+    Adjusted Rand Index.
+
+    The Adjusted Rand Index (ARI) computes a similarity measure
+    between two clusterings and was developed by Hubert and
+    Arabie (1985). This index is symmetric and takes the value 1 when the
+    partitions agree perfectly up to a permutation.
+
+    Parameters
+    ----------
+    labels_true : int array, shape = (n_samples,)
+        Ground truth class labels of the partition used as reference
+
+    labels_pred : int array, shape = (n_samples,)
+        Cluster labels of the partition to evaluate
+
+
+    Returns
+    -------
+    ari : float
+       Similarity score between -1.0 and 1.0. Random labelings have a ARI
+       close to 0.0. 1.0 stands for perfect match.
+
+    Examples
+    --------
+      >>> ARI(
+            [0, 0, 1, 2, 2, 2],
+            [0, 0, 1, 1, 2, 2]
+        )
+      0.4444444444444444
+
+    References
+    ----------
+    .. [Hubert1985] L. Hubert and P. Arabie, Comparing Partitions,
+      Journal of Classification 1985
+      https://link.springer.com/article/10.1007%2FBF01908075
+
+    """
+    labels_true = np.array(labels_true).flatten()
+    labels_pred = np.array(labels_pred).flatten()
+    assert labels_true.size == labels_pred.size
+
+    n = labels_true.size
+    nb_true_class = len(set(labels_true))
+    nb_pred_class = len(set(labels_pred))
+
+    if (
+        nb_true_class == nb_pred_class == 1
+        or nb_true_class == nb_pred_class == 0
+        or nb_true_class == nb_pred_class == n
+    ):
+        return 1.0
+
+    _, true_class_idx = np.unique(labels_true, return_inverse=True)
+    _, pred_class_idx = np.unique(labels_pred, return_inverse=True)
+    contingency_table = np.zeros((nb_true_class, nb_pred_class))
+    np.add.at(contingency_table, (true_class_idx, pred_class_idx), 1)
+
+    sum_tt_comb = comb(contingency_table, 2).sum()
+    sum_a_comb = comb(contingency_table.sum(axis=1), 2).sum()
+    sum_b_comb = comb(contingency_table.sum(axis=0), 2).sum()
+    comb_n = comb(n, 2).sum()
+
+    ari = ((sum_tt_comb) - (sum_a_comb * sum_b_comb / comb_n)) / (
+        0.5 * (sum_a_comb + sum_b_comb) - (sum_a_comb * sum_b_comb) / comb_n
+    )
+    return ari
+
+
+def CARI(
+    labels_true_part_1: Union[np.ndarray, list],
+    labels_true_part_2: Union[np.ndarray, list],
+    labels_pred_part_1: Union[np.ndarray, list],
+    labels_pred_part_2: Union[np.ndarray, list],
+) -> float:
+    """Coclustering Adjusted Rand Index for two sets of biclusters.
+
+    The Coclustering Adjuster Rand Index (CARI) computes a similarity measure
+    between two coclusterings and is an adaptation of the
+    Adjusted Rand Index (ARI) developed by Hubert and Arabie (1985) from a
+    coclustering point of view.
+    Like the ARI, this index is symmetric and takes the value 1 when the
+    couples of partitions agree perfectly up to a permutation.
+
+    Parameters
+    ----------
+    labels_true_part_1 : int array, shape = (n_samples_1,)
+        Ground truth class labels of the first partition used as reference
+
+    labels_true_part_2 : int array, shape = (n_samples_2,)
+        Ground truth class labels of the second partition used as reference
+
+    labels_pred_part_1 : int array, shape = (n_samples_1,)
+        Cluster labels of the fist partition to evaluate
+
+    labels_pred_part_2 : int array, shape = (n_samples_2,)
+        Cluster labels of the second partition to evaluate
+
+    Returns
+    -------
+    cari : float
+       Similarity score between -1.0 and 1.0. Random labelings have a CARI
+       close to 0.0. 1.0 stands for perfect match.
+
+    Examples
+    --------
+      >>> CARI(
+            [0, 0, 1, 1],
+            [0, 0, 1, 2, 2, 2],
+            [0, 0, 1, 1],
+            [0, 0, 1, 1, 2, 2]
+        )
+      0.649746192893401
+
+    References
+    ----------
+    .. [Robert2019] Valérie Robert, Yann Vasseur, Vincent Brault.
+      Comparing high dimensional partitions with the Coclustering Adjusted Rand
+      Index. 2019. https://hal.inria.fr/hal-01524832v4
+
+    .. [Hubert1985] L. Hubert and P. Arabie, Comparing Partitions,
+      Journal of Classification 1985
+      https://link.springer.com/article/10.1007%2FBF01908075
+
+    """
+
+    labels_true_part_1 = np.array(labels_true_part_1).flatten()
+    labels_true_part_2 = np.array(labels_true_part_2).flatten()
+    labels_pred_part_1 = np.array(labels_pred_part_1).flatten()
+    labels_pred_part_2 = np.array(labels_pred_part_2).flatten()
+
+    assert labels_true_part_1.size == labels_pred_part_1.size
+    assert labels_true_part_2.size == labels_pred_part_2.size
+
+    n_samples_part_1 = labels_true_part_1.size
+    n_samples_part_2 = labels_true_part_2.size
+
+    n_classes_part_1 = len(set(labels_true_part_1))
+    n_clusters_part_1 = len(set(labels_pred_part_1))
+    n_classes_part_2 = len(set(labels_true_part_2))
+    n_clusters_part_2 = len(set(labels_pred_part_2))
+
+    if (
+        (
+            n_classes_part_1
+            == n_clusters_part_1
+            == n_classes_part_2
+            == n_clusters_part_2
+            == 1
+        )
+        or n_classes_part_1
+        == n_clusters_part_1
+        == n_classes_part_2
+        == n_clusters_part_2
+        == 0
+        or (
+            n_classes_part_1 == n_clusters_part_1 == n_samples_part_1
+            and n_classes_part_2 == n_clusters_part_2 == n_samples_part_2
+        )
+    ):
+        return 1.0
+
+    # Compute the contingency data tables
+    _, true_class_idx_part_1 = np.unique(
+        labels_true_part_1, return_inverse=True
+    )
+    _, pred_class_idx_part_1 = np.unique(
+        labels_pred_part_1, return_inverse=True
+    )
+    contingency_part_1 = np.zeros((n_classes_part_1, n_clusters_part_1))
+    np.add.at(
+        contingency_part_1, (true_class_idx_part_1, pred_class_idx_part_1), 1
+    )
+    _, true_class_idx_part_2 = np.unique(
+        labels_true_part_2, return_inverse=True
+    )
+    _, pred_class_idx_part_2 = np.unique(
+        labels_pred_part_2, return_inverse=True
+    )
+    contingency_part_2 = np.zeros((n_classes_part_2, n_clusters_part_2))
+    np.add.at(
+        contingency_part_2, (true_class_idx_part_2, pred_class_idx_part_2), 1
+    )
+
+    # Theorem 3.3 of Robert2019 (https://hal.inria.fr/hal-01524832v4) defines
+    # the final contingency matrix by the Kronecker product between the two
+    # contingency matrices of patition 1 and 2.
+    contingency_table = np.kron(contingency_part_1, contingency_part_2)
+    sum_tt_comb = comb(contingency_table, 2).sum()
+    sum_a_comb = comb(contingency_table.sum(axis=1), 2).sum()
+    sum_b_comb = comb(contingency_table.sum(axis=0), 2).sum()
+    comb_n = comb(n_samples_part_1 * n_samples_part_2, 2).sum()
+
+    ari = ((sum_tt_comb) - (sum_a_comb * sum_b_comb / comb_n)) / (
+        0.5 * (sum_a_comb + sum_b_comb) - (sum_a_comb * sum_b_comb) / comb_n
+    )
+    return ari
 
 
 def lbm_merge_group(
