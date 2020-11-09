@@ -439,8 +439,8 @@ class LBM_bernouilli:
         u = self._np.zeros((n1, nl))
         v = self._np.zeros((n2, nq))
         if self.use_gpu:
-            self.cupyx.scatter_add(u, indices_ones[0], tau_2[indices_ones[1]])
-            self.cupyx.scatter_add(v, indices_ones[1], tau_1[indices_ones[0]])
+            self._cupyx.scatter_add(u, indices_ones[0], tau_2[indices_ones[1]])
+            self._cupyx.scatter_add(v, indices_ones[1], tau_1[indices_ones[0]])
         else:
             self._np.add.at(u, indices_ones[0], tau_2[indices_ones[1]])
             self._np.add.at(v, indices_ones[1], tau_1[indices_ones[0]])
