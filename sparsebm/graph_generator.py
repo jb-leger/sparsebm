@@ -4,7 +4,7 @@ import scipy.sparse
 
 
 def generate_bernouilli_SBM_dataset(
-    n,
+    number_of_nodes,
     number_of_clusters,
     connection_probabilities,
     cluster_proportions,
@@ -12,7 +12,7 @@ def generate_bernouilli_SBM_dataset(
 ):
     print("Start generating graph, it might take a while...")
     cluster_indicator = np.random.multinomial(
-        1, cluster_proportions.flatten(), size=n
+        1, cluster_proportions.flatten(), size=number_of_nodes
     )
     classes = [
         cluster_indicator[:, q].nonzero()[0] for q in range(number_of_clusters)
@@ -53,15 +53,15 @@ def generate_bernouilli_SBM_dataset(
             np.ones(len(inserted)),
             ([i for i, j in inserted], [j for i, j in inserted]),
         ),
-        (n, n),
+        (number_of_nodes, number_of_nodes),
     )
 
     return {"data": X, "cluster_indicator": cluster_indicator}
 
 
 def generate_bernouilli_LBM_dataset(
-    n1,
-    n2,
+    number_of_rows,
+    number_of_columns,
     nb_row_clusters,
     nb_column_clusters,
     connection_probabilities,
@@ -70,10 +70,10 @@ def generate_bernouilli_LBM_dataset(
 ):
     print("Start generating graph, it might take a while...")
     row_cluster_indicator = np.random.multinomial(
-        1, row_cluster_proportions.flatten(), size=n1
+        1, row_cluster_proportions.flatten(), size=number_of_rows
     )
     column_cluster_indicator = np.random.multinomial(
-        1, column_cluster_proportions.flatten(), size=n2
+        1, column_cluster_proportions.flatten(), size=number_of_columns
     )
     row_classes = [
         row_cluster_indicator[:, q].nonzero()[0]
@@ -116,7 +116,7 @@ def generate_bernouilli_LBM_dataset(
             np.ones(len(inserted)),
             ([i for i, j in inserted], [j for i, j in inserted]),
         ),
-        (n1, n2),
+        (number_of_rows, number_of_columns),
     )
 
     return {
