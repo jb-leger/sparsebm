@@ -7,6 +7,7 @@ import copy
 
 try:
     import cupy
+    import cupyx
 
     _CUPY_INSTALLED = True
 except ImportError:
@@ -83,6 +84,7 @@ class LBM_bernouilli:
         self.verbosity = verbosity
 
         self._np = np
+        self._cupyx = None
         self._n_row_clusters = n_row_clusters
         self._n_column_clusters = n_column_clusters
         self._nb_rows = None
@@ -110,6 +112,7 @@ class LBM_bernouilli:
                 print("GPU not used as CUDA is not available")
             else:
                 self._np = cupy
+                self._cupyx = cupyx
                 cupy.cuda.Device(gpu_number).use()
                 self.use_gpu = True
                 self.gpu_number = gpu_number
@@ -436,8 +439,8 @@ class LBM_bernouilli:
         u = self._np.zeros((n1, nl))
         v = self._np.zeros((n2, nq))
         if self.use_gpu:
-            self._np.scatter_add(u, indices_ones[0], tau_2[indices_ones[1]])
-            self._np.scatter_add(v, indices_ones[1], tau_1[indices_ones[0]])
+            self.cupyx.scatter_add(u, indices_ones[0], tau_2[indices_ones[1]])
+            self.cupyx.scatter_add(v, indices_ones[1], tau_1[indices_ones[0]])
         else:
             self._np.add.at(u, indices_ones[0], tau_2[indices_ones[1]])
             self._np.add.at(v, indices_ones[1], tau_1[indices_ones[0]])

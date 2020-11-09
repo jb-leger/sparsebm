@@ -7,6 +7,7 @@ from itertools import count
 
 try:
     import cupy
+    import cupyx
 
     _CUPY_INSTALLED = True
 except ImportError:
@@ -80,6 +81,7 @@ class SBM_bernouilli:
         self.verbosity = verbosity
 
         self._np = np
+        self._cupyx = None
         self._n_clusters = n_clusters
         self._symetric = symetric
         self._nb_rows = None
@@ -107,6 +109,7 @@ class SBM_bernouilli:
                 print("GPU not used as CUDA is not available", file=sys.stderr)
             else:
                 self._np = cupy
+                self._cupyx = cupyx
                 cupy.cuda.Device(gpu_number).use()
                 self.use_gpu = True
                 self.gpu_number = gpu_number
@@ -349,7 +352,7 @@ class SBM_bernouilli:
         # Precomputations needed.
         u = self._np.zeros((n1, nq))
         if self.use_gpu:
-            self._np.scatter_add(u, indices_ones[0], tau[indices_ones[1]])
+            self._cupyx.scatter_add(u, indices_ones[0], tau[indices_ones[1]])
         else:
             self._np.add.at(u, indices_ones[0], tau[indices_ones[1]])
 
