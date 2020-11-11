@@ -8,6 +8,7 @@ from itertools import count
 try:
     import cupy
     import cupyx
+    import GPUtil
 
     _CUPY_INSTALLED = True
 except ImportError:
@@ -110,9 +111,17 @@ class SBM_bernouilli:
             else:
                 self._np = cupy
                 self._cupyx = cupyx
-                cupy.cuda.Device(gpu_number).use()
-                self.use_gpu = True
-                self.gpu_number = gpu_number
+                free_idx = GPUtil.getAvailable("memory", limit=10)
+                if not free_idx:
+                    print("GPU not used as no gpu is free", file=sys.stderr)
+                    self._np = np
+                    self.gpu_number = None
+                else:
+                    gpu_number = free_idx[0]
+                    cupy.cuda.Device(gpu_number).use()
+                    self.use_gpu = True
+                    self.gpu_number = gpu_number
+                    print("GPU {} is used".format(gpu_number))
 
     @property
     def n_clusters(self):
