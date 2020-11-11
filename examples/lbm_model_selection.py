@@ -14,10 +14,9 @@ print(__doc__)
 
 import numpy as np
 import matplotlib.pyplot as plt
-import sklearn.metrics
 import sparsebm
 from sparsebm import generate_bernouilli_LBM_dataset, ModelSelection
-from sparsebm.utils import reorder_rows
+from sparsebm.utils import reorder_rows, ARI, CARI
 
 ###
 ### Specifying the parameters of the dataset to generate.
@@ -96,17 +95,19 @@ if lbm_selected.trained_successfully:
             lbm_selected.n_column_clusters
         )
     )
-    row_ari = sklearn.metrics.adjusted_rand_score(
-        row_clusters_index, lbm_selected.row_labels
-    )
-    column_ari = sklearn.metrics.adjusted_rand_score(
-        column_clusters_index, lbm_selected.column_labels
+    row_ari = ARI(row_clusters_index, lbm_selected.row_labels)
+    column_ari = ARI(column_clusters_index, lbm_selected.column_labels)
+    co_ari = CARI(
+        row_clusters_index,
+        column_clusters_index,
+        lbm_selected.row_labels,
+        lbm_selected.column_labels,
     )
     print("Adjusted Rand index is {:.2f} for row classes".format(row_ari))
     print(
         "Adjusted Rand index is {:.2f} for column classes".format(column_ari)
     )
-
+    print("Coclustering Adjusted Rand index is {:.2f}".format(co_ari))
 original_matrix = graph.copy()
 reconstructed_matrix = graph.copy()
 # Reordering rows
@@ -120,23 +121,21 @@ reorder_rows(reconstructed_matrix, np.argsort(lbm_selected.column_labels))
 original_matrix = original_matrix.transpose()
 reconstructed_matrix = reconstructed_matrix.transpose()
 
-plt.clf()
-figure = plt.figure(1, figsize=(8, 5), constrained_layout=True)
+figure, (ax1, ax2, ax3) = plt.subplots(
+    1, 3, figsize=(8, 5), constrained_layout=True
+)
 # Plotting the original matrix.
-ax1 = plt.subplot(131)
 ax1.spy(graph, markersize=0.05, marker="*", c="black")
 ax1.set_title("Original data matrix")
 ax1.axis("off")
 # Plotting the original ordered matrix.
-ax2 = plt.subplot(132)
 ax2.spy(original_matrix, markersize=0.05, marker="*", c="black")
 ax2.set_title("Data matrix reordered \naccording to the \noriginal classes")
 ax2.axis("off")
 # Plotting the matrix reordered by the LBM.
-ax3 = plt.subplot(133)
 ax3.spy(reconstructed_matrix, markersize=0.05, marker="*", c="black")
 ax3.set_title(
     "Data matrix reordered \naccording to the \nclasses given by the LBM"
 )
 ax3.axis("off")
-plt.show()
+plt.pause(0.1)
