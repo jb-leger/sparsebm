@@ -68,7 +68,6 @@ column_clusters_index = column_cluster_indicator.argmax(1)
 lbm_model_selection = ModelSelection(
     graph,
     model_type="LBM",  # Either 'LBM' or 'SBM', the model used to cluster the data.
-    gpu_number=0,  # Either None or the desired GPU index.
     plot=True,  # display illustration of the model selection algorithm.
 )
 

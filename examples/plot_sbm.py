@@ -61,7 +61,6 @@ model = SBM_bernouilli(
     n_iter_early_stop=10,  # Specifying the number of EM-steps to perform on each init.
     n_init_total_run=10,  # Specifying the number inits to keep and to train until convergence.
     verbosity=1,  # Either 0, 1 or 2. Higher value display more information to the user.
-    gpu_number=0,  # Either None or the desired GPU index.
 )
 model.fit(graph)
 

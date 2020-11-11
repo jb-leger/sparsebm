@@ -60,7 +60,6 @@ sbm_model_selection = ModelSelection(
     graph,
     model_type="SBM",  # Either 'LBM' or 'SBM', the model used to cluster the data.
     symetric=True,  # Specifying if the generated data matrix is symetric.
-    gpu_number=0,  # Either None or the desired GPU index.
     plot=True,  # display illustration of the model selection algorithm.
 )
 

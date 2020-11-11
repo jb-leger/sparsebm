@@ -11,8 +11,10 @@ try:
     import GPUtil
 
     _CUPY_INSTALLED = True
+    _DEFAULT_USE_GPU = True
 except ImportError:
     _CUPY_INSTALLED = False
+    _DEFAULT_USE_GPU = False
 
 
 class LBM_bernouilli:
@@ -44,8 +46,8 @@ class LBM_bernouilli:
     verbosity : int, optional, default: 1
         Degree of verbosity. Scale from 0 (no message displayed) to 3.
 
-    gpu_number : int, optional, default: 1
-        Select the index of the GPU. None if no need of GPU.
+    use_gpu : bool, optional, default: _DEFAULT_USE_GPU
+        Specify if a GPU should be used.
 
     Attributes
     ----------
@@ -73,7 +75,7 @@ class LBM_bernouilli:
         n_iter_early_stop=100,
         tol=1e-5,
         verbosity=1,
-        gpu_number=None,
+        use_gpu=_DEFAULT_USE_GPU,
     ):
         self.max_iter = max_iter
         self.n_init = n_init
@@ -83,6 +85,7 @@ class LBM_bernouilli:
         self.nb_iter_early_stop = n_iter_early_stop
         self.tol = tol
         self.verbosity = verbosity
+        self.use_gpu = use_gpu
 
         self._np = np
         self._cupyx = None
@@ -99,32 +102,26 @@ class LBM_bernouilli:
         self._tau_2 = None
         self._run_number = 0
         self._nb_runs_to_perform = n_init
+        self._np = np
 
-        self.gpu_number = None
-        self.use_gpu = False
-        if gpu_number is not None and gpu_number >= 0:
-            if not _CUPY_INSTALLED:
-                self._np = np
-                self.gpu_number = None
-                print("GPU not used as cupy library seems not to be installed")
-            elif not cupy.cuda.is_available():
-                self._np = np
-                self.gpu_number = None
-                print("GPU not used as CUDA is not available")
+        if use_gpu and (not _CUPY_INSTALLED or not cupy.cuda.is_available()):
+            self.use_gpu = False
+            print(
+                "GPU not used as cupy library seems not to be installed or CUDA is not available",
+                file=sys.stderr,
+            )
+
+        if use_gpu:
+            free_idx = GPUtil.getAvailable("memory", limit=10)
+            if not free_idx:
+                self.use_gpu = False
+                print("GPU not used as no gpu is free", file=sys.stderr)
             else:
                 self._np = cupy
                 self._cupyx = cupyx
-                free_idx = GPUtil.getAvailable("memory", limit=10)
-                if not free_idx:
-                    print("GPU not used as no gpu is free", file=sys.stderr)
-                    self._np = np
-                    self.gpu_number = None
-                else:
-                    gpu_number = free_idx[0]
-                    cupy.cuda.Device(gpu_number).use()
-                    self.use_gpu = True
-                    self.gpu_number = gpu_number
-                    print("GPU {} is used".format(gpu_number))
+                gpu_number = free_idx[0]
+                cupy.cuda.Device(gpu_number).use()
+                print("GPU {} is used".format(gpu_number))
 
     @property
     def n_row_clusters(self):
@@ -566,7 +563,7 @@ class LBM_bernouilli:
                     n_iter_early_stop={self.nb_iter_early_stop},
                     tol={self.tol},
                     verbosity={self.verbosity},
-                    gpu_number={self.gpu_number},
+                    use_gpu={self.use_gpu},
                 )"""
 
     def copy(self):
@@ -581,7 +578,7 @@ class LBM_bernouilli:
             self.nb_iter_early_stop,
             self.tol,
             self.verbosity,
-            self.gpu_number,
+            self.use_gpu,
         )
         model._nb_rows = self._nb_rows
         model._nb_cols = self._nb_cols

@@ -72,7 +72,6 @@ model = LBM_bernouilli(
     n_init_total_run=10,  # Specifying the number inits to keep and to train until convergence.
     tol=1e-4,  # Tolerance to declare convergence
     verbosity=1,  # Either 0, 1 or 2. Higher value display more information to the user.
-    gpu_number=0,  # Either None or the desired GPU index.
 )
 model.fit(graph)
 
