@@ -285,7 +285,7 @@ def lbm_merge_group(
     a2 = model._np.asarray(model._alpha_2)
     pi = model._np.asarray(model._pi)
     ll = model._compute_likelihood(indices_ones, pi, a1, a2, t1, t2)
-    model._loglikelihood = ll if model.use_gpu else ll
+    model._loglikelihood = ll.get() if model.use_gpu else ll
     return (model.get_ICL(), model)
 
 
@@ -343,7 +343,7 @@ def sbm_merge_group(
 
     ll = model._compute_likelihood(indices_ones, pi, a1, t1)
     model._pi = pi if model.use_gpu else pi
-    model._loglikelihood = ll if model.use_gpu else ll
+    model._loglikelihood = ll.get() if model.use_gpu else ll
     return (model.get_ICL(), model)
 
 
@@ -421,7 +421,7 @@ def lbm_split_group(
 
     model._pi = pi.get() if model.use_gpu else pi
     ll = model._compute_likelihood(indices_ones, pi, a1, a2, t1, t2)
-    model._loglikelihood = ll if model.use_gpu else ll
+    model._loglikelihood = ll.get() if model.use_gpu else ll
 
     return (model.get_ICL(), model)
 
