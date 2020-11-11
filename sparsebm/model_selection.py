@@ -52,7 +52,7 @@ class ModelSelection:
             np.asarray(graph.sum(0)).squeeze(),
         )
         self._model_type = model_type
-        self._gpu_number = gpu_number
+        self._use_gpu = use_gpu
         self._symetric = symetric
         self._plot = plot
 
@@ -133,7 +133,7 @@ class ModelSelection:
         return f"""ModelSelection(
                     graph=graph,
                     model_type={self._model_type},
-                    gpu_number={self._gpu_number},
+                    use_gpu={self._use_gpu},
                     symetric={self._symetric},
                 )"""
 
