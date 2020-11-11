@@ -104,14 +104,23 @@ class LBM_bernouilli:
         self._nb_runs_to_perform = n_init
         self._np = np
 
-        if use_gpu and (not _CUPY_INSTALLED or not cupy.cuda.is_available()):
+        if use_gpu and (
+            not _CUPY_INSTALLED
+            or not _DEFAULT_USE_GPU
+            or not cupy.cuda.is_available()
+        ):
             self.use_gpu = False
             print(
                 "GPU not used as cupy library seems not to be installed or CUDA is not available",
                 file=sys.stderr,
             )
 
-        if use_gpu:
+        if (
+            use_gpu
+            and _CUPY_INSTALLED
+            and _DEFAULT_USE_GPU
+            and cupy.cuda.is_available()
+        ):
             free_idx = GPUtil.getAvailable("memory", limit=10)
             if not free_idx:
                 self.use_gpu = False
@@ -121,7 +130,6 @@ class LBM_bernouilli:
                 self._cupyx = cupyx
                 gpu_number = free_idx[0]
                 cupy.cuda.Device(gpu_number).use()
-                print("GPU {} is used".format(gpu_number))
 
     @property
     def n_row_clusters(self):

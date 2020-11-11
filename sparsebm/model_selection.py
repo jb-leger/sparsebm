@@ -55,6 +55,7 @@ class ModelSelection:
         self._use_gpu = use_gpu
         self._symetric = symetric
         self._plot = plot
+        self._figure = plt.subplots(1) if plot else None
 
         if model_type == "LBM":
             model = LBM_bernouilli(
@@ -112,6 +113,7 @@ class ModelSelection:
         sparsebm.LBM_bernouilli or sparsebm.SBM_bernouilli
             The best trained model according to the ICL.
         """
+        best_icl = [self.selected_model.get_ICL()]
         try:
             while not np.all(
                 [
@@ -123,10 +125,17 @@ class ModelSelection:
                 self.model_explored = self._explore_strategy(strategy="split")
                 print("Merging")
                 self.model_explored = self._explore_strategy(strategy="merge")
-
+                best_iter_model = self.selected_model
+                best_icl.append(best_iter_model.get_ICL())
+                print("Best icl is {:.2f}".format(best_icl[-1]))
+                if len(best_icl) > 3 and best_icl[-3] == best_icl[-1]:
+                    break
         except KeyboardInterrupt:
             pass
 
+        if self._plot:
+            figure, _ = self._figure
+            plt.close(figure)
         return self.selected_model
 
     def __repr__(self) -> str:
@@ -444,14 +453,12 @@ class ModelSelection:
         return (models[0][1].get_ICL(), models[0][1])
 
 
-# figure = plt.figure(figsize=(5, 1))
-
-
 def plot_merge_split_graph(
     model_selection, model_explored, strategy, best_model_current_strategy
 ):
     # figure = plt.figure(figsize=(5, 1))
-    plt.cla()
+    figure, ax = model_selection._figure
+    ax.cla()
     if model_selection._model_type == "LBM":
 
         currently_explored_model = (
@@ -493,17 +500,17 @@ def plot_merge_split_graph(
             for m in model_selection.model_explored.values()
         ]
 
-        plt.xlim((0, max(10, max(nqs), max(nqs_prev))))
-        plt.ylim((0, max(10, max(nls), max(nls_prev))))
+        ax.set_xlim((0, max(10, max(nqs), max(nqs_prev))))
+        ax.set_ylim((0, max(10, max(nls), max(nls_prev))))
         if strategy == "merge":
-            plt.title("Merging strategy")
+            ax.set_title("Merging strategy")
         else:
-            plt.title("Spliting strategy")
-        plt.ylabel("Number of column groups")
-        plt.xlabel("Number of row groups")
-        plt.grid()
+            ax.set_title("Spliting strategy")
+        ax.set_ylabel("Number of column groups")
+        ax.set_xlabel("Number of row groups")
+        ax.grid()
 
-        plt.scatter(
+        ax.scatter(
             nqs_prev,
             nls_prev,
             s=100,
@@ -511,7 +518,7 @@ def plot_merge_split_graph(
             marker="+",
             label="Models explored during previous strategy",
         )
-        plt.scatter(
+        ax.scatter(
             nqs,
             nls,
             s=70,
@@ -519,7 +526,7 @@ def plot_merge_split_graph(
             marker="o",
             label="Models explored during current strategy",
         )
-        plt.scatter(
+        ax.scatter(
             [c[0] for c in currently_explored_nqnl],
             [c[1] for c in currently_explored_nqnl],
             s=30,
@@ -527,7 +534,7 @@ def plot_merge_split_graph(
             marker="o",
             label="Models currently explored",
         )
-        plt.scatter(
+        ax.scatter(
             [best_model_current_strategy["model"]._n_row_clusters],
             [best_model_current_strategy["model"]._n_column_clusters],
             s=80,
@@ -535,14 +542,14 @@ def plot_merge_split_graph(
             marker="o",
             label="Optimal model of the current strategy",
         )
-        plt.annotate(
+        ax.annotate(
             str(round(model_selection.selected_model.get_ICL(), 2)),
             xy=(
                 model_selection.selected_model._n_row_clusters - 0.5,
                 model_selection.selected_model._n_column_clusters + 0.25,
             ),
         )
-        plt.scatter(
+        ax.scatter(
             [model_selection.selected_model._n_row_clusters],
             [model_selection.selected_model._n_column_clusters],
             s=120,
@@ -550,7 +557,7 @@ def plot_merge_split_graph(
             marker="*",
             label="Optimal model from all strategies",
         )
-        plt.annotate(
+        ax.annotate(
             str(round(model_selection.selected_model.get_ICL(), 2)),
             xy=(
                 model_selection.selected_model._n_row_clusters - 0.5,
@@ -558,7 +565,6 @@ def plot_merge_split_graph(
             ),
         )
     else:
-        plt.cla()
         nqs = [m["model"]._n_clusters for m in model_explored.values()]
         icls = [m["model"].get_ICL() for m in model_explored.values()]
         nqs_prev = [
@@ -570,15 +576,15 @@ def plot_merge_split_graph(
             for m in model_selection.model_explored.values()
         ]
 
-        plt.xlim((0, max(10, max(nqs), max(nqs_prev))))
+        ax.set_xlim((0, max(10, max(nqs), max(nqs_prev))))
         if strategy == "merge":
-            plt.title("Merging strategy")
+            ax.set_title("Merging strategy")
         else:
-            plt.title("Spliting strategy")
-        plt.ylabel("ICL")
-        plt.xlabel("Number of row groups")
-        plt.grid()
-        plt.scatter(
+            ax.set_title("Spliting strategy")
+        ax.set_ylabel("ICL")
+        ax.set_xlabel("Number of row groups")
+        ax.grid()
+        ax.scatter(
             nqs_prev,
             icls_prev,
             s=100,
@@ -586,7 +592,7 @@ def plot_merge_split_graph(
             marker="+",
             label="Models explored during previous strategy",
         )
-        plt.scatter(
+        ax.scatter(
             nqs,
             icls,
             s=70,
@@ -594,7 +600,7 @@ def plot_merge_split_graph(
             marker="o",
             label="Models explored during current strategy",
         )
-        plt.scatter(
+        ax.scatter(
             [best_model_current_strategy["model"]._n_clusters],
             [best_model_current_strategy["icl"]],
             s=80,
@@ -602,7 +608,7 @@ def plot_merge_split_graph(
             marker="o",
             label="Optimal model of the current strategy",
         )
-        plt.scatter(
+        ax.scatter(
             [model_selection.selected_model._n_clusters],
             [model_selection.selected_model.get_ICL()],
             s=120,
@@ -610,6 +616,6 @@ def plot_merge_split_graph(
             marker="*",
             label="Optimal model from all strategies",
         )
-    plt.legend()
+    ax.legend()
     plt.pause(0.01)
-    plt.plot()
+    # plt.plot()
