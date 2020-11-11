@@ -140,7 +140,7 @@ class ModelSelection:
 
     def __repr__(self) -> str:
         return f"""ModelSelection(
-                    graph=graph,
+                    graph=<{type(self.graph).__name__} at {hex(id(self.graph))}>,
                     model_type={self._model_type},
                     use_gpu={self._use_gpu},
                     symetric={self._symetric},
@@ -168,7 +168,7 @@ class ModelSelection:
             its ICL value, two flags merge_explored and split_explored.
 
         """
-        assert strategy == "merge" or strategy == "split"
+        assert strategy in ["merge", "split"]
 
         # Getting the first model to explore, different according to the strategy.
         pv_model = (  # Number of classes, different according to the model LBM/SBM.
@@ -336,10 +336,10 @@ class ModelSelection:
         tuple of (float, sparsebm.LBM_bernouilli or sparsebm.SBM_bernouilli)
             The higher ICL value and its associated model, from all merges/splits.
         """
-        assert strategy == "merge" or strategy == "split"
+        assert strategy in ["merge", "split"]
 
         if self._model_type == "LBM":
-            assert type == 0 or type == 1
+            assert type in [0, 1]
             nb_clusters = (
                 model._n_row_clusters
                 if type == 0
@@ -367,9 +367,8 @@ class ModelSelection:
                         idx_group_2=b,
                         indices_ones=self._indices_ones,
                     )
-                    for a in range(nb_clusters)
                     for b in range(nb_clusters)
-                    if (a != b and a < b)
+                    for a in range(b)
                 ]
             else:
                 models = [
@@ -379,9 +378,8 @@ class ModelSelection:
                         idx_group_2=b,
                         indices_ones=self._indices_ones,
                     )
-                    for a in range(nb_clusters)
                     for b in range(nb_clusters)
-                    if (a != b and a < b)
+                    for a in range(b)
                 ]
         else:
             if self._model_type == "LBM":
