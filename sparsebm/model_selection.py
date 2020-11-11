@@ -22,7 +22,7 @@ class ModelSelection:
         self,
         graph: Union[spmatrix, np.ndarray],
         model_type: str,
-        gpu_number: Optional[int] = 0,
+        use_gpu: Optional[bool] = True,
         symetric: Optional[bool] = False,
         plot: Optional[bool] = True,
     ) -> None:
@@ -33,8 +33,8 @@ class ModelSelection:
             Matrix to be analyzed
         model_type : {'LBM', 'SBM'}
             The type of co-clustering model to use.
-        gpu_number : int, optional, default: 0
-            Select the index of the GPU. None if no need of GPU.
+        use_gpu : bool, optional, default: True
+            Specify if a GPU should be used.
         symetric : bool, optional, default: False
             In case of SBM model, specify if the graph connections are symetric.
         """
@@ -66,12 +66,12 @@ class ModelSelection:
                 n_iter_early_stop=1,
                 tol=1e-3,
                 verbosity=0,
-                gpu_number=gpu_number,
+                use_gpu=use_gpu,
             )
         else:
             model = SBM_bernouilli(
                 1,
-                gpu_number=gpu_number,
+                use_gpu=use_gpu,
                 symetric=symetric,
                 max_iter=5000,
                 n_init=1,
