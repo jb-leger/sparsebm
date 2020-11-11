@@ -342,7 +342,7 @@ def sbm_merge_group(
     ).sum(0) / ((t1_sum.reshape((-1, 1)) * t1_sum) - t1.T @ t1)
 
     ll = model._compute_likelihood(indices_ones, pi, a1, t1)
-    model._pi = pi if model.use_gpu else pi
+    model._pi = pi.get() if model.use_gpu else pi
     model._loglikelihood = ll.get() if model.use_gpu else ll
     return (model.get_ICL(), model)
 
