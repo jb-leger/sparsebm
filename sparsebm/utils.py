@@ -482,7 +482,7 @@ def sbm_split_group(
 
     model._pi = pi.get() if model.use_gpu else pi
     ll = model._compute_likelihood(indices_ones, pi, a1, t1)
-    model._loglikelihood = ll if model.use_gpu else ll
+    model._loglikelihood = ll.get() if model.use_gpu else ll
 
     return (model.get_ICL(), model)
 
