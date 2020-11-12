@@ -122,6 +122,8 @@ class SBM_bernouilli:
         ):
             if gpu_index != None:
                 cupy.cuda.Device(gpu_index).use()
+                self._np = cupy
+                self._cupyx = cupyx
             else:
                 free_idx = GPUtil.getAvailable("memory", limit=10)
                 if not free_idx:
