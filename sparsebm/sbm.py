@@ -46,6 +46,9 @@ class SBM_bernouilli:
     use_gpu : bool, optional, default: _DEFAULT_USE_GPU
         Specify if a GPU should be used.
 
+    gpu_index : int, optional, default: None
+        Specify the gpu index if needed.
+
     Attributes
     ----------
     max_iter : int
@@ -73,6 +76,7 @@ class SBM_bernouilli:
         tol=1e-5,
         verbosity=1,
         use_gpu=_DEFAULT_USE_GPU,
+        gpu_index=None,
     ):
         self.max_iter = max_iter
         self.n_init = n_init
@@ -83,6 +87,7 @@ class SBM_bernouilli:
         self.tol = tol
         self.verbosity = verbosity
         self.use_gpu = use_gpu
+        self.gpu_index = gpu_index
 
         self._np = np
         self._cupyx = None
@@ -115,15 +120,18 @@ class SBM_bernouilli:
             and _DEFAULT_USE_GPU
             and cupy.cuda.is_available()
         ):
-            free_idx = GPUtil.getAvailable("memory", limit=10)
-            if not free_idx:
-                self.use_gpu = False
-                print("GPU not used as no gpu is free", file=sys.stderr)
+            if gpu_index != None:
+                cupy.cuda.Device(gpu_index).use()
             else:
-                self._np = cupy
-                self._cupyx = cupyx
-                gpu_number = free_idx[0]
-                cupy.cuda.Device(gpu_number).use()
+                free_idx = GPUtil.getAvailable("memory", limit=10)
+                if not free_idx:
+                    self.use_gpu = False
+                    print("GPU not used as no gpu is free", file=sys.stderr)
+                else:
+                    self._np = cupy
+                    self._cupyx = cupyx
+                    gpu_number = free_idx[0]
+                    cupy.cuda.Device(gpu_number).use()
 
     @property
     def n_clusters(self):
