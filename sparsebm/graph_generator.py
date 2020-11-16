@@ -75,7 +75,6 @@ def generate_bernouilli_LBM_dataset(
             for l in range(nb_column_clusters)
         ]
 
-        graph = scipy.sparse.coo_matrix((number_of_rows, number_of_columns))
         rows = np.array([])
         cols = np.array([])
         for i, (q, l) in enumerate(
@@ -88,10 +87,7 @@ def generate_bernouilli_LBM_dataset(
             if verbosity > 0:
                 bar.update(i)
             n1, n2 = row_classes[q].size, col_classes[l].size
-            density = np.random.binomial(
-                n1 * n2, connection_probabilities[q, l]
-            ) / (n1 * n2)
-            nnz = int(n1 * n2 * density)
+            nnz = np.random.binomial(n1 * n2, connection_probabilities[q, l])
             if nnz > 0:
                 row = np.random.choice(row_classes[q], size=2 * nnz)
                 col = np.random.choice(col_classes[l], size=2 * nnz)
@@ -100,7 +96,7 @@ def generate_bernouilli_LBM_dataset(
                     row = np.random.choice(row_classes[q], size=2 * nnz)
                     col = np.random.choice(col_classes[l], size=2 * nnz)
                     row_col_unique = np.unique(np.stack((row, col), 1), axis=0)
-
+                np.random.shuffle(row_col_unique)
                 rows = np.concatenate((rows, row_col_unique[:nnz, 0]))
                 cols = np.concatenate((cols, row_col_unique[:nnz, 1]))
 
