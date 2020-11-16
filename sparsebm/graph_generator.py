@@ -14,7 +14,7 @@ def generate_bernouilli_LBM_dataset(
     row_cluster_proportions: np.ndarray,
     column_cluster_proportions: np.ndarray,
     verbosity: Optional[int] = 1,
-) -> dict[str, str, str]:
+) -> dict:
     """ Generate a sparse bipartite graph with Latent Block Models.
 
     Parameters
