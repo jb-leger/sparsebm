@@ -92,16 +92,17 @@ def generate_bernouilli_LBM_dataset(
                 n1 * n2, connection_probabilities[q, l]
             ) / (n1 * n2)
             nnz = int(n1 * n2 * density)
-            row = np.random.choice(row_classes[q], size=2 * nnz)
-            col = np.random.choice(col_classes[l], size=2 * nnz)
-            row_col_unique = np.unique(np.stack((row, col), 1), axis=0)
-            while row_col_unique.shape[0] < nnz:
+            if nnz > 0:
                 row = np.random.choice(row_classes[q], size=2 * nnz)
                 col = np.random.choice(col_classes[l], size=2 * nnz)
                 row_col_unique = np.unique(np.stack((row, col), 1), axis=0)
+                while row_col_unique.shape[0] < nnz:
+                    row = np.random.choice(row_classes[q], size=2 * nnz)
+                    col = np.random.choice(col_classes[l], size=2 * nnz)
+                    row_col_unique = np.unique(np.stack((row, col), 1), axis=0)
 
-            rows = np.concatenate((rows, row_col_unique[:nnz, 0]))
-            cols = np.concatenate((cols, row_col_unique[:nnz, 1]))
+                rows = np.concatenate((rows, row_col_unique[:nnz, 0]))
+                cols = np.concatenate((cols, row_col_unique[:nnz, 1]))
 
         graph = scipy.sparse.coo_matrix(
             (np.ones(rows.size), (rows, cols)),
