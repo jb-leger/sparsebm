@@ -69,6 +69,7 @@ class ModelSelection:
                 verbosity=0,
                 use_gpu=use_gpu,
             )
+            model.fit(graph)
         else:
             model = SBM_bernouilli(
                 1,
@@ -81,7 +82,7 @@ class ModelSelection:
                 tol=1e-3,
                 verbosity=0,
             )
-        model.fit(graph)
+            model.fit(graph, symetric=symetric)
 
         nnq = (
             model.n_row_clusters + model.n_column_clusters

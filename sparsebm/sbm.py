@@ -70,7 +70,6 @@ class SBM_bernouilli(BaseEstimator):
     def __init__(
         self,
         n_clusters=5,
-        symetric=False,
         max_iter=10000,
         n_init=100,
         n_init_total_run=10,
@@ -89,13 +88,12 @@ class SBM_bernouilli(BaseEstimator):
         self.tol = tol
         self.verbosity = verbosity
         self.n_clusters = n_clusters
-        self.symetric = symetric
         self.use_gpu = use_gpu
         self.gpu_index = gpu_index
 
-    def score(self, X, y=None):
+    def score(self, X, y=None, symetric=False):
         if not hasattr(self, "loglikelihood_"):
-            self.fit(X)
+            self.fit(X, symetric=symetric)
         return self.get_ICL()
 
     def get_params(self, deep=True):
@@ -203,16 +201,15 @@ class SBM_bernouilli(BaseEstimator):
             * np.log(self._nb_rows * (self._nb_rows - 1))
         )
 
-    def fit(self, X, y=None):
+    def fit(self, X, y=None, symetric=False):
         """Perform co-clustering by direct maximization of graph modularity.
 
         Parameters
         ----------
         X : scipy sparse matrix, shape=(n_nodes, n_nodes)
             Matrix to be analyzed
-        use_gpu : False or int
-            If not false, use the gpu index specified
         """
+        self.symetric = symetric
         self._check_params()
         self.trained_successfully_ = False
         n, n2 = X.shape

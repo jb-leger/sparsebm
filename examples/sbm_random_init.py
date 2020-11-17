@@ -55,13 +55,12 @@ clusters_index = cluster_indicator.argmax(1)
 # instantiate the Stochastic Block Model class.
 model = SBM_bernouilli(
     number_of_clusters,  # A number of classes must be specify. Otherwise see model selection.
-    symetric=True,  # Specifying if the generated data matrix is symetric.
     n_init=50,  # Specifying the number of initializations to perform.
     n_iter_early_stop=10,  # Specifying the number of EM-steps to perform on each init.
     n_init_total_run=10,  # Specifying the number inits to keep and to train until convergence.
     verbosity=1,  # Either 0, 1 or 2. Higher value display more information to the user.
 )
-model.fit(graph)
+model.fit(graph, symetric=True)
 
 if model.trained_successfully:
     print("Model has been trained successfully.")
