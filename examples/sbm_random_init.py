@@ -102,4 +102,4 @@ ax3.set_title(
     "Data matrix reordered \naccording to the\nclasses given by the SBM"
 )
 ax3.axis("off")
-plt.pause(0.1)
+plt.show()

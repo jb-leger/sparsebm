@@ -84,9 +84,9 @@ class ModelSelection:
         model.fit(graph)
 
         nnq = (
-            model._n_row_clusters + model._n_column_clusters
+            model.n_row_clusters + model.n_column_clusters
             if self._model_type == "LBM"
-            else model._n_clusters
+            else model.n_clusters
         )
         self.model_explored = {
             nnq: {
@@ -178,11 +178,11 @@ class ModelSelection:
         )
         nnq_best_model = (
             (
-                pv_model["model"]._n_row_clusters
-                + pv_model["model"]._n_column_clusters
+                pv_model["model"].n_row_clusters
+                + pv_model["model"].n_column_clusters
             )
             if self._model_type == "LBM"
-            else pv_model["model"]._n_clusters
+            else pv_model["model"].n_clusters
         )
 
         model_explored = {}  # All models explored for the current strategy.
@@ -193,10 +193,10 @@ class ModelSelection:
         while models_to_explore:
             model_flag = models_to_explore.pop(0)
             nnq = (  # Number of classes, different according to the model LBM/SBM.
-                model_flag["model"]._n_row_clusters
-                + model_flag["model"]._n_column_clusters
+                model_flag["model"].n_row_clusters
+                + model_flag["model"].n_column_clusters
                 if self._model_type == "LBM"
-                else model_flag["model"]._n_clusters
+                else model_flag["model"].n_clusters
             )
             model_explored[nnq] = model_flag
 
@@ -219,11 +219,11 @@ class ModelSelection:
                         best_model = self.model_explored[classes_key]
                         nnq_best_model = (
                             (
-                                best_model["model"]._n_row_clusters
-                                + best_model["model"]._n_column_clusters
+                                best_model["model"].n_row_clusters
+                                + best_model["model"].n_column_clusters
                             )
                             if self._model_type == "LBM"
-                            else best_model["model"]._n_clusters
+                            else best_model["model"].n_clusters
                         )
 
                     print(
@@ -274,21 +274,21 @@ class ModelSelection:
             if best_models:
                 bfm = best_models[0]
                 nnq_bm = (
-                    bfm["model"]._n_row_clusters
-                    + bfm["model"]._n_column_clusters
+                    bfm["model"].n_row_clusters
+                    + bfm["model"].n_column_clusters
                     if self._model_type == "LBM"
-                    else bfm["model"]._n_clusters
+                    else bfm["model"].n_clusters
                 )
 
                 if bfm["icl"] > best_model["icl"]:
                     best_model = bfm
                     nnq_best_model = (
                         (
-                            best_model["model"]._n_row_clusters
-                            + best_model["model"]._n_column_clusters
+                            best_model["model"].n_row_clusters
+                            + best_model["model"].n_column_clusters
                         )
                         if self._model_type == "LBM"
-                        else best_model["model"]._n_clusters
+                        else best_model["model"].n_clusters
                     )
 
                 if strategy == "split" and (
@@ -341,18 +341,16 @@ class ModelSelection:
         if self._model_type == "LBM":
             assert type in [0, 1]
             nb_clusters = (
-                model._n_row_clusters
-                if type == 0
-                else model._n_column_clusters
+                model.n_row_clusters if type == 0 else model.n_column_clusters
             )
             if strategy == "merge" and (
-                (type == 0 and model._n_row_clusters <= 1)
-                or (type == 1 and model._n_column_clusters <= 1)
+                (type == 0 and model.n_row_clusters <= 1)
+                or (type == 1 and model.n_column_clusters <= 1)
             ):
                 return (-np.inf, None)
 
         else:
-            nb_clusters = model._n_clusters
+            nb_clusters = model.n_clusters
             if strategy == "merge" and nb_clusters <= 1:
                 return (-np.inf, None)
 
@@ -467,34 +465,34 @@ def plot_merge_split_graph(
         currently_explored_nqnl = (
             [
                 (
-                    currently_explored_model._n_row_clusters - 1,
-                    currently_explored_model._n_column_clusters,
+                    currently_explored_model.n_row_clusters - 1,
+                    currently_explored_model.n_column_clusters,
                 ),
                 (
-                    currently_explored_model._n_row_clusters,
-                    currently_explored_model._n_column_clusters - 1,
+                    currently_explored_model.n_row_clusters,
+                    currently_explored_model.n_column_clusters - 1,
                 ),
             ]
             if strategy == "merge"
             else [
                 (
-                    currently_explored_model._n_row_clusters + 1,
-                    currently_explored_model._n_column_clusters,
+                    currently_explored_model.n_row_clusters + 1,
+                    currently_explored_model.n_column_clusters,
                 ),
                 (
-                    currently_explored_model._n_row_clusters,
-                    currently_explored_model._n_column_clusters + 1,
+                    currently_explored_model.n_row_clusters,
+                    currently_explored_model.n_column_clusters + 1,
                 ),
             ]
         )
-        nqs = [m["model"]._n_row_clusters for m in model_explored.values()]
-        nls = [m["model"]._n_column_clusters for m in model_explored.values()]
+        nqs = [m["model"].n_row_clusters for m in model_explored.values()]
+        nls = [m["model"].n_column_clusters for m in model_explored.values()]
         nqs_prev = [
-            m["model"]._n_row_clusters
+            m["model"].n_row_clusters
             for m in model_selection.model_explored.values()
         ]
         nls_prev = [
-            m["model"]._n_column_clusters
+            m["model"].n_column_clusters
             for m in model_selection.model_explored.values()
         ]
 
@@ -533,8 +531,8 @@ def plot_merge_split_graph(
             label="Models currently explored",
         )
         ax.scatter(
-            [best_model_current_strategy["model"]._n_row_clusters],
-            [best_model_current_strategy["model"]._n_column_clusters],
+            [best_model_current_strategy["model"].n_row_clusters],
+            [best_model_current_strategy["model"].n_column_clusters],
             s=80,
             c="green",
             marker="o",
@@ -543,13 +541,13 @@ def plot_merge_split_graph(
         ax.annotate(
             str(round(model_selection.selected_model.get_ICL(), 2)),
             xy=(
-                model_selection.selected_model._n_row_clusters - 0.5,
-                model_selection.selected_model._n_column_clusters + 0.25,
+                model_selection.selected_model.n_row_clusters - 0.5,
+                model_selection.selected_model.n_column_clusters + 0.25,
             ),
         )
         ax.scatter(
-            [model_selection.selected_model._n_row_clusters],
-            [model_selection.selected_model._n_column_clusters],
+            [model_selection.selected_model.n_row_clusters],
+            [model_selection.selected_model.n_column_clusters],
             s=120,
             c="black",
             marker="*",
@@ -558,15 +556,15 @@ def plot_merge_split_graph(
         ax.annotate(
             str(round(model_selection.selected_model.get_ICL(), 2)),
             xy=(
-                model_selection.selected_model._n_row_clusters - 0.5,
-                model_selection.selected_model._n_column_clusters + 0.25,
+                model_selection.selected_model.n_row_clusters - 0.5,
+                model_selection.selected_model.n_column_clusters + 0.25,
             ),
         )
     else:
-        nqs = [m["model"]._n_clusters for m in model_explored.values()]
+        nqs = [m["model"].n_clusters for m in model_explored.values()]
         icls = [m["model"].get_ICL() for m in model_explored.values()]
         nqs_prev = [
-            m["model"]._n_clusters
+            m["model"].n_clusters
             for m in model_selection.model_explored.values()
         ]
         icls_prev = [
@@ -599,7 +597,7 @@ def plot_merge_split_graph(
             label="Models explored during current strategy",
         )
         ax.scatter(
-            [best_model_current_strategy["model"]._n_clusters],
+            [best_model_current_strategy["model"].n_clusters],
             [best_model_current_strategy["icl"]],
             s=80,
             c="green",
@@ -607,7 +605,7 @@ def plot_merge_split_graph(
             label="Optimal model of the current strategy",
         )
         ax.scatter(
-            [model_selection.selected_model._n_clusters],
+            [model_selection.selected_model.n_clusters],
             [model_selection.selected_model.get_ICL()],
             s=120,
             c="black",

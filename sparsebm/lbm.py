@@ -1,9 +1,11 @@
 import sys
+import copy
 import progressbar
 import numpy as np
 from heapq import heappush, heappushpop
 from itertools import count
-import copy
+from sklearn.utils.estimator_checks import check_estimator
+from sklearn.base import BaseEstimator
 
 try:
     import cupy
@@ -17,7 +19,7 @@ except ImportError:
     _DEFAULT_USE_GPU = False
 
 
-class LBM_bernouilli:
+class LBM_bernouilli(BaseEstimator):
     """LBM with bernouilli distribution.
 
     Parameters
@@ -70,8 +72,8 @@ class LBM_bernouilli:
 
     def __init__(
         self,
-        n_row_clusters,
-        n_column_clusters,
+        n_row_clusters=4,
+        n_column_clusters=4,
         max_iter=10000,
         n_init=100,
         n_init_total_run=10,
@@ -89,31 +91,93 @@ class LBM_bernouilli:
         self.nb_iter_early_stop = n_iter_early_stop
         self.tol = tol
         self.verbosity = verbosity
+        self.n_row_clusters = n_row_clusters
+        self.n_column_clusters = n_column_clusters
         self.use_gpu = use_gpu
         self.gpu_index = gpu_index
 
+    @property
+    def row_group_membership_probability(self):
+        """array_like: Returns the row group membership probabilities"""
+        assert (
+            self.trained_successfully_ == True
+        ), "Model not trained successfully"
+        return self.alpha_1_
+
+    @property
+    def column_group_membership_probability(self):
+        """array_like: Returns the column group membership probabilities"""
+        assert (
+            self.trained_successfully_ == True
+        ), "Model not trained successfully"
+        return self.alpha_2_
+
+    @property
+    def row_labels(self):
+        """array_like: Returns the row labels"""
+        assert (
+            self.trained_successfully_ == True
+        ), "Model not trained successfully"
+        return self.tau_1_.argmax(1)
+
+    @property
+    def column_labels(self):
+        """array_like: Returns the column labels"""
+        assert (
+            self.trained_successfully_ == True
+        ), "Model not trained successfully"
+        return self.tau_2_.argmax(1)
+
+    @property
+    def row_predict_proba(self):
+        """array_like: Returns the predicted row classes membership probabilities"""
+        assert self.trained_successfully_ == True
+        return self.tau_1_
+
+    @property
+    def column_predict_proba(self):
+        """array_like: Returns the predicted column classes membership probabilities"""
+        assert (
+            self.trained_successfully_ == True
+        ), "Model not trained successfully"
+        return self.tau_2_
+
+    @property
+    def trained_successfully(self):
+        """bool: Returns the predicted column classes membership probabilities"""
+        return self.trained_successfully_
+
+    def get_params(self, deep=True):
+        return {
+            "max_iter": self.max_iter,
+            "n_init": self.n_init,
+            "n_init_total_run": self.n_init_total_run,
+            "n_iter_early_stop": self.n_iter_early_stop,
+            "tol": self.tol,
+            "verbosity": self.verbosity,
+            "n_row_clusters": self.n_row_clusters,
+            "n_column_clusters": self.n_column_clusters,
+            "use_gpu": self.use_gpu,
+            "gpu_index": self.gpu_index,
+        }
+
+    def set_params(self, **parameters):
+        for parameter, value in parameters.items():
+            setattr(self, parameter, value)
+        return self
+
+    def _check_params(self):
         self._np = np
         self._cupyx = None
-        self._n_row_clusters = n_row_clusters
-        self._n_column_clusters = n_column_clusters
-        self._nb_rows = None
-        self._nb_cols = None
-        self._loglikelihood = -np.inf
-        self._trained_successfully = False
-        self._pi = None
-        self._alpha_1 = None
-        self._alpha_2 = None
-        self._tau_1 = None
-        self._tau_2 = None
-        self._run_number = 0
-        self._nb_runs_to_perform = n_init
-        self._np = np
+        self.loglikelihood_ = -np.inf
+        self.trained_successfully_ = False
 
-        if use_gpu and (
+        if self.use_gpu and (
             not _CUPY_INSTALLED
             or not _DEFAULT_USE_GPU
             or not cupy.cuda.is_available()
         ):
+            self.gpu_number = None
             self.use_gpu = False
             print(
                 "GPU not used as cupy library seems not to be installed or CUDA is not available",
@@ -121,7 +185,7 @@ class LBM_bernouilli:
             )
 
         if (
-            use_gpu
+            self.use_gpu
             and _CUPY_INSTALLED
             and _DEFAULT_USE_GPU
             and cupy.cuda.is_available()
@@ -141,66 +205,10 @@ class LBM_bernouilli:
                     gpu_number = free_idx[0]
                     cupy.cuda.Device(gpu_number).use()
 
-    @property
-    def n_row_clusters(self):
-        """array_like: Returns the number of row classes"""
-        return self._n_row_clusters
-
-    @property
-    def n_column_clusters(self):
-        """array_like: Returns the number of column classes"""
-        return self._n_column_clusters
-
-    @property
-    def row_group_membership_probability(self):
-        """array_like: Returns the row group membership probabilities"""
-        assert (
-            self._trained_successfully == True
-        ), "Model not trained successfully"
-        return self._alpha_1
-
-    @property
-    def column_group_membership_probability(self):
-        """array_like: Returns the column group membership probabilities"""
-        assert (
-            self._trained_successfully == True
-        ), "Model not trained successfully"
-        return self._alpha_2
-
-    @property
-    def row_labels(self):
-        """array_like: Returns the row labels"""
-        assert (
-            self._trained_successfully == True
-        ), "Model not trained successfully"
-        return self._tau_1.argmax(1)
-
-    @property
-    def column_labels(self):
-        """array_like: Returns the column labels"""
-        assert (
-            self._trained_successfully == True
-        ), "Model not trained successfully"
-        return self._tau_2.argmax(1)
-
-    @property
-    def row_predict_proba(self):
-        """array_like: Returns the predicted row classes membership probabilities"""
-        assert self._trained_successfully == True
-        return self._tau_1
-
-    @property
-    def column_predict_proba(self):
-        """array_like: Returns the predicted column classes membership probabilities"""
-        assert (
-            self._trained_successfully == True
-        ), "Model not trained successfully"
-        return self._tau_2
-
-    @property
-    def trained_successfully(self):
-        """bool: Returns the predicted column classes membership probabilities"""
-        return self._trained_successfully
+    def score(self, X, y=None):
+        if not hasattr(self, "loglikelihood_"):
+            self.fit(X)
+        return self.get_ICL()
 
     def get_ICL(self) -> float:
         """Computation of the ICL criteria that can be used for model selection.
@@ -210,18 +218,18 @@ class LBM_bernouilli:
             value of the ICL criteria.
         """
         assert (
-            self._trained_successfully == True
+            self.trained_successfully_ == True
         ), "Model not trained successfully"
         return (
-            self._loglikelihood
-            - (self._n_row_clusters - 1) / 2 * np.log(self._nb_rows)
-            - (self._n_column_clusters - 1) / 2 * np.log(self._nb_cols)
-            - (self._n_column_clusters * self._n_row_clusters)
+            self.loglikelihood_
+            - (self.n_row_clusters - 1) / 2 * np.log(self._nb_rows)
+            - (self.n_column_clusters - 1) / 2 * np.log(self._nb_cols)
+            - (self.n_column_clusters * self.n_row_clusters)
             / 2
             * np.log(self._nb_cols * self._nb_rows)
         )
 
-    def fit(self, X) -> None:
+    def fit(self, X, y=None) -> None:
         """Perform co-clustering by direct maximization of graph modularity.
 
         Parameters
@@ -229,6 +237,8 @@ class LBM_bernouilli:
         X : numpy matrix or scipy sparse matrix, shape=(n_samples, n_features)
             Matrix to be analyzed
         """
+        self._check_params()
+        self.trained_successfully_ = False
         n1, n2 = X.shape
         self._nb_rows = n1
         self._nb_cols = n2
@@ -259,7 +269,6 @@ class LBM_bernouilli:
             for run_number in range(self.n_init):
                 if self.verbosity > 0:
                     bar.update(run_number)
-                self._run_number = run_number
                 (
                     success,
                     ll,
@@ -269,7 +278,11 @@ class LBM_bernouilli:
                     tau_1,
                     tau_2,
                 ) = self._fit_single(
-                    indices_ones, n1, n2, early_stop=self.nb_iter_early_stop
+                    indices_ones,
+                    n1,
+                    n2,
+                    early_stop=self.nb_iter_early_stop,
+                    run_number=run_number,
                 )
                 calculation_result = [
                     ll,
@@ -305,9 +318,7 @@ class LBM_bernouilli:
                     redirect_stdout=True,
                 ).start()
             # Repeat the whole EM algorithm with several initializations.
-            self._nb_runs_to_perform = len(best_inits)
             for run_number, init in enumerate(best_inits):
-                self._run_number = run_number
                 if self.verbosity > 0:
                     bar.update(run_number)
 
@@ -331,21 +342,23 @@ class LBM_bernouilli:
                     n1,
                     n2,
                     init_params=(pi, alpha_1, alpha_2, tau_1, tau_2),
+                    run_number=run_number,
                 )
 
-                if success and ll > self._loglikelihood:
-                    self._loglikelihood = ll.get() if self.use_gpu else ll
-                    self._trained_successfully = True
-                    self._pi = pi.get() if self.use_gpu else pi
-                    self._alpha_1 = alpha_1.get() if self.use_gpu else alpha_1
-                    self._alpha_2 = alpha_2.get() if self.use_gpu else alpha_2
-                    self._tau_1 = tau_1.get() if self.use_gpu else tau_1
-                    self._tau_2 = tau_2.get() if self.use_gpu else tau_2
+                if success and ll > self.loglikelihood_:
+                    self.loglikelihood_ = ll.get() if self.use_gpu else ll
+                    self.trained_successfully_ = True
+                    self.pi_ = pi.get() if self.use_gpu else pi
+                    self.alpha_1_ = alpha_1.get() if self.use_gpu else alpha_1
+                    self.alpha_2_ = alpha_2.get() if self.use_gpu else alpha_2
+                    self.tau_1_ = tau_1.get() if self.use_gpu else tau_1
+                    self.tau_2_ = tau_2.get() if self.use_gpu else tau_2
         except KeyboardInterrupt:
             pass
         finally:
             if self.verbosity > 0:
                 bar.finish()
+        return self
 
     def _fit_single(
         self,
@@ -355,6 +368,7 @@ class LBM_bernouilli:
         early_stop=None,
         init_params=None,
         in_place=False,
+        run_number=None,
     ):
         """Perform one run of the LBM_bernouilli algorithm with one random initialization.
 
@@ -370,18 +384,18 @@ class LBM_bernouilli:
         if init_params:
             if init_params is True:
                 if (
-                    self._pi is not None
-                    and self._alpha_1 is not None
-                    and self._alpha_2 is not None
-                    and self._tau_1 is not None
-                    and self._tau_2 is not None
+                    self.pi_ is not None
+                    and self.alpha_1_ is not None
+                    and self.alpha_2_ is not None
+                    and self.tau_1_ is not None
+                    and self.tau_2_ is not None
                 ):
                     alpha_1, alpha_2, tau_1, tau_2, pi = (
-                        self._np.asarray(self._alpha_1),
-                        self._np.asarray(self._alpha_2),
-                        self._np.asarray(self._tau_1),
-                        self._np.asarray(self._tau_2),
-                        self._np.asarray(self._pi),
+                        self._np.asarray(self.alpha_1_),
+                        self._np.asarray(self.alpha_2_),
+                        self._np.asarray(self.tau_1_),
+                        self._np.asarray(self.tau_2_),
+                        self._np.asarray(self.pi_),
                     )
                 else:
                     assert False
@@ -391,8 +405,8 @@ class LBM_bernouilli:
             alpha_1, alpha_2, tau_1, tau_2, pi = self._init_bernouilli_LBM_random(
                 n1,
                 n2,
-                self._n_row_clusters,
-                self._n_column_clusters,
+                self.n_row_clusters,
+                self.n_column_clusters,
                 len(indices_ones),
             )
 
@@ -421,19 +435,19 @@ class LBM_bernouilli:
             )
         else:
             success = True
-        if self.verbosity > 1:
+        if self.verbosity > 1 and run_number:
             print(
-                f"Run {self._run_number:3d} / {self._nb_runs_to_perform:3d} \t success : {success} \t log-like: {ll.get()  if self.use_gpu else ll:.4f} \t nb_iter: {iteration:5d}"
+                f"Run {run_number:3d} / {self.n_init:3d} \t success : {success} \t log-like: {ll.get()  if self.use_gpu else ll:.4f} \t nb_iter: {iteration:5d}"
             )
 
         if in_place:
-            self._loglikelihood = ll.get() if self.use_gpu else ll
-            self._trained_successfully = True
-            self._pi = pi.get() if self.use_gpu else pi
-            self._alpha_1 = alpha_1.get() if self.use_gpu else alpha_1
-            self._alpha_2 = alpha_2.get() if self.use_gpu else alpha_2
-            self._tau_1 = tau_1.get() if self.use_gpu else tau_1
-            self._tau_2 = tau_2.get() if self.use_gpu else tau_2
+            self.loglikelihood_ = ll.get() if self.use_gpu else ll
+            self.trained_successfully_ = True
+            self.pi_ = pi.get() if self.use_gpu else pi
+            self.alpha_1_ = alpha_1.get() if self.use_gpu else alpha_1
+            self.alpha_2_ = alpha_2.get() if self.use_gpu else alpha_2
+            self.tau_1_ = tau_1.get() if self.use_gpu else tau_1
+            self.tau_2_ = tau_2.get() if self.use_gpu else tau_2
 
         return success, ll, pi, alpha_1, alpha_2, tau_1, tau_2
 
@@ -455,7 +469,7 @@ class LBM_bernouilli:
         """
         eps_1 = 1e-2 / n1
         eps_2 = 1e-2 / n2
-        nq, nl = self._n_row_clusters, self._n_column_clusters
+        nq, nl = self.n_row_clusters, self.n_column_clusters
 
         ########################## E-step  ##########################
 
@@ -529,7 +543,7 @@ class LBM_bernouilli:
         tau_1 : Row group variationnal parameters.
         tau_2 : Column group variationnal parameters.
         """
-        nq, nl = self._n_row_clusters, self._n_column_clusters
+        nq, nl = self.n_row_clusters, self.n_column_clusters
         return (
             -self._np.sum(tau_1 * self._np.log(tau_1))
             - self._np.sum(tau_2 * self._np.log(tau_2))
@@ -573,8 +587,8 @@ class LBM_bernouilli:
 
     def __repr__(self):
         return f"""LBM_bernouilli(
-                    n_row_clusters={self._n_row_clusters},
-                    n_column_clusters={self._n_column_clusters},
+                    n_row_clusters={self.n_row_clusters},
+                    n_column_clusters={self.n_column_clusters},
                     max_iter={self.max_iter},
                     n_init={self.n_init},
                     n_init_total_run={self.n_init_total_run},
@@ -588,8 +602,8 @@ class LBM_bernouilli:
         """Returns a copy of the model.
         """
         model = LBM_bernouilli(
-            self._n_row_clusters,
-            self._n_column_clusters,
+            self.n_row_clusters,
+            self.n_column_clusters,
             self.max_iter,
             self.n_init,
             self.n_init_total_run,
@@ -600,13 +614,13 @@ class LBM_bernouilli:
         )
         model._nb_rows = self._nb_rows
         model._nb_cols = self._nb_cols
-        model._loglikelihood = self._loglikelihood
-        model._trained_successfully = self._trained_successfully
-        model._pi = copy.copy(self._pi)
-        model._alpha_1 = copy.copy(self._alpha_1)
-        model._alpha_2 = copy.copy(self._alpha_2)
-        model._tau_1 = copy.copy(self._tau_1)
-        model._tau_2 = copy.copy(self._tau_2)
-        model._run_number = self._run_number
-        model._nb_runs_to_perform = self._nb_runs_to_perform
+        model.loglikelihood_ = self.loglikelihood_
+        model._np = self._np
+        model._cupyx = self._cupyx
+        model.trained_successfully_ = self.trained_successfully_
+        model.pi_ = copy.copy(self.pi_)
+        model.alpha_1_ = copy.copy(self.alpha_1_)
+        model.alpha_2_ = copy.copy(self.alpha_2_)
+        model.tau_1_ = copy.copy(self.tau_1_)
+        model.tau_2_ = copy.copy(self.tau_2_)
         return model

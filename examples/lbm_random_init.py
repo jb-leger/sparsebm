@@ -127,4 +127,4 @@ ax3.set_title(
     "Data matrix reordered \naccording to the\n classes given by the LBM"
 )
 ax3.axis("off")
-plt.pause(0.1)
+plt.show()

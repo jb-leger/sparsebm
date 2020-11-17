@@ -239,13 +239,13 @@ def lbm_merge_group(
         assert False
     eps = 1e-4
     if type == 0:
-        model._n_row_clusters -= 1
-        t = model._tau_1
-        alpha = model._alpha_1
+        model.n_row_clusters -= 1
+        t = model.tau_1_
+        alpha = model.alpha_1_
     else:
-        model._n_column_clusters -= 1
-        t = model._tau_2
-        alpha = model._alpha_2
+        model.n_column_clusters -= 1
+        t = model.tau_2_
+        alpha = model.alpha_2_
     if idx_group_1 > idx_group_2:
         c = idx_group_2
         idx_group_2 = idx_group_1
@@ -257,35 +257,35 @@ def lbm_merge_group(
     new_alpha = np.delete(alpha, idx_group_2)
     new_alpha[idx_group_1] = alpha[idx_group_1] + alpha[idx_group_2]
 
-    new_pi = np.delete(model._pi, idx_group_2, axis=type)
+    new_pi = np.delete(model.pi_, idx_group_2, axis=type)
 
     if type == 0:
-        model._tau_1 = new_t
-        model._alpha_1 = new_alpha
+        model.tau_1_ = new_t
+        model.alpha_1_ = new_alpha
         new_pi[idx_group_1] = (
-            alpha[idx_group_1] * model._pi[idx_group_1]
-            + alpha[idx_group_2] * model._pi[idx_group_2]
+            alpha[idx_group_1] * model.pi_[idx_group_1]
+            + alpha[idx_group_2] * model.pi_[idx_group_2]
         ) / (alpha[idx_group_1] + alpha[idx_group_2])
     else:
-        model._tau_2 = new_t
-        model._alpha_2 = new_alpha
+        model.tau_2_ = new_t
+        model.alpha_2_ = new_alpha
         new_pi[:, idx_group_1] = (
-            alpha[idx_group_1] * model._pi[:, idx_group_1]
-            + alpha[idx_group_2] * model._pi[:, idx_group_2]
+            alpha[idx_group_1] * model.pi_[:, idx_group_1]
+            + alpha[idx_group_2] * model.pi_[:, idx_group_2]
         ) / (alpha[idx_group_1] + alpha[idx_group_2])
 
-    model._pi = new_pi
-    nq = model._n_row_clusters
-    nl = model._n_column_clusters
+    model.pi_ = new_pi
+    nq = model.n_row_clusters
+    nl = model.n_column_clusters
 
     # Transfert to GPU if necessary
-    t1 = model._np.asarray(model._tau_1)
-    t2 = model._np.asarray(model._tau_2)
-    a1 = model._np.asarray(model._alpha_1)
-    a2 = model._np.asarray(model._alpha_2)
-    pi = model._np.asarray(model._pi)
+    t1 = model._np.asarray(model.tau_1_)
+    t2 = model._np.asarray(model.tau_2_)
+    a1 = model._np.asarray(model.alpha_1_)
+    a2 = model._np.asarray(model.alpha_2_)
+    pi = model._np.asarray(model.pi_)
     ll = model._compute_likelihood(indices_ones, pi, a1, a2, t1, t2)
-    model._loglikelihood = ll.get() if model.use_gpu else ll
+    model.loglikelihood_ = ll.get() if model.use_gpu else ll
     return (model.get_ICL(), model)
 
 
@@ -313,9 +313,9 @@ def sbm_merge_group(
         The ICL value and the model obtained from the merge of two classes.
     """
     eps = 1e-4
-    model._n_clusters -= 1
-    t = model._tau
-    alpha = model._alpha
+    model.n_clusters -= 1
+    t = model.tau_
+    alpha = model.alpha_
 
     if idx_group_1 > idx_group_2:
         c = idx_group_2
@@ -328,13 +328,13 @@ def sbm_merge_group(
     new_alpha = np.delete(alpha, idx_group_2)
     new_alpha[idx_group_1] = alpha[idx_group_1] + alpha[idx_group_2]
 
-    model._alpha = new_alpha
-    model._tau = new_t
-    nq = model._n_clusters
+    model.alpha_ = new_alpha
+    model.tau_ = new_t
+    nq = model.n_clusters
 
     # Transfert to GPU if necessary
-    t1 = model._np.asarray(model._tau)
-    a1 = model._np.asarray(model._alpha)
+    t1 = model._np.asarray(model.tau_)
+    a1 = model._np.asarray(model.alpha_)
     t1_sum = t1.sum(0)
     pi = (
         t1[indices_ones[0]].reshape(-1, nq, 1)
@@ -342,8 +342,8 @@ def sbm_merge_group(
     ).sum(0) / ((t1_sum.reshape((-1, 1)) * t1_sum) - t1.T @ t1)
 
     ll = model._compute_likelihood(indices_ones, pi, a1, t1)
-    model._pi = pi.get() if model.use_gpu else pi
-    model._loglikelihood = ll.get() if model.use_gpu else ll
+    model.pi_ = pi.get() if model.use_gpu else pi
+    model.loglikelihood_ = ll.get() if model.use_gpu else ll
     return (model.get_ICL(), model)
 
 
@@ -381,11 +381,11 @@ def lbm_split_group(
         assert False
     eps = 1e-4
     if type == 0:
-        model._n_row_clusters += 1
-        t = model._tau_1
+        model.n_row_clusters += 1
+        t = model.tau_1_
     else:
-        model._n_column_clusters += 1
-        t = model._tau_2
+        model.n_column_clusters += 1
+        t = model.tau_2_
     n = t.shape[0]
     degrees = row_col_degrees[type].flatten()
     mask = t.argmax(1) == index
@@ -399,29 +399,29 @@ def lbm_split_group(
     t /= t.sum(1).reshape(-1, 1)
 
     if type == 0:
-        model._tau_1 = t
-        model._alpha_1 = t.mean(0)
+        model.tau_1_ = t
+        model.alpha_1_ = t.mean(0)
     else:
-        model._tau_2 = t
-        model._alpha_2 = t.mean(0)
+        model.tau_2_ = t
+        model.alpha_2_ = t.mean(0)
 
-    nq = model._n_row_clusters
-    nl = model._n_column_clusters
+    nq = model.n_row_clusters
+    nl = model.n_column_clusters
 
     # Transfert to GPU if necessary
-    t1 = model._np.asarray(model._tau_1)
-    t2 = model._np.asarray(model._tau_2)
-    a1 = model._np.asarray(model._alpha_1)
-    a2 = model._np.asarray(model._alpha_2)
+    t1 = model._np.asarray(model.tau_1_)
+    t2 = model._np.asarray(model.tau_2_)
+    a1 = model._np.asarray(model.alpha_1_)
+    a2 = model._np.asarray(model.alpha_2_)
 
     pi = (
         t1[indices_ones[0]].reshape(-1, nq, 1)
         * t2[indices_ones[1]].reshape(-1, 1, nl)
     ).sum(0) / (t1.sum(0).reshape(nq, 1) * t2.sum(0).reshape(1, nl))
 
-    model._pi = pi.get() if model.use_gpu else pi
+    model.pi_ = pi.get() if model.use_gpu else pi
     ll = model._compute_likelihood(indices_ones, pi, a1, a2, t1, t2)
-    model._loglikelihood = ll.get() if model.use_gpu else ll
+    model.loglikelihood_ = ll.get() if model.use_gpu else ll
 
     return (model.get_ICL(), model)
 
@@ -452,8 +452,8 @@ def sbm_split_group(
         The ICL value and the model obtained from the split of the specified class.
     """
     eps = 1e-4
-    model._n_clusters += 1
-    t = model._tau
+    model.n_clusters += 1
+    t = model.tau_
     n = t.shape[0]
     degrees = degrees.flatten()
     mask = t.argmax(1) == index
@@ -466,13 +466,13 @@ def sbm_split_group(
     t[(degrees <= median) & mask, index] = eps
     t /= t.sum(1).reshape(-1, 1)
 
-    model._tau = t
-    model._alpha = t.mean(0)
-    nq = model._n_clusters
+    model.tau_ = t
+    model.alpha_ = t.mean(0)
+    nq = model.n_clusters
 
     # Transfert to GPU if necessary
-    t1 = model._np.asarray(model._tau)
-    a1 = model._np.asarray(model._alpha)
+    t1 = model._np.asarray(model.tau_)
+    a1 = model._np.asarray(model.alpha_)
     t1_sum = t1.sum(0)
 
     pi = (
@@ -480,9 +480,9 @@ def sbm_split_group(
         * t1[indices_ones[1]].reshape(-1, 1, nq)
     ).sum(0) / ((t1_sum.reshape((-1, 1)) * t1_sum) - t1.T @ t1)
 
-    model._pi = pi.get() if model.use_gpu else pi
+    model.pi_ = pi.get() if model.use_gpu else pi
     ll = model._compute_likelihood(indices_ones, pi, a1, t1)
-    model._loglikelihood = ll.get() if model.use_gpu else ll
+    model.loglikelihood_ = ll.get() if model.use_gpu else ll
 
     return (model.get_ICL(), model)
 

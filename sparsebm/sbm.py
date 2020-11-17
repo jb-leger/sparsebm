@@ -4,6 +4,8 @@ import progressbar
 import numpy as np
 from heapq import heappush, heappushpop
 from itertools import count
+from sklearn.utils.estimator_checks import check_estimator
+from sklearn.base import BaseEstimator
 
 try:
     import cupy
@@ -17,7 +19,7 @@ except ImportError:
     _DEFAULT_USE_GPU = False
 
 
-class SBM_bernouilli:
+class SBM_bernouilli(BaseEstimator):
     """SBM with bernouilli distribution.
 
     Parameters
@@ -57,7 +59,7 @@ class SBM_bernouilli:
         Number of initializations that will be run for n_iter_early_stop EM iterations.
     n_init_total_run : int
         Number of the n_init best initializations that will be run until convergence.
-    nb_iter_early_stop : int
+    n_iter_early_stop : int
         Number of EM iterations to used to run the n_init initializations.
     tol : int
         Tolerance to declare convergence
@@ -67,7 +69,7 @@ class SBM_bernouilli:
 
     def __init__(
         self,
-        n_clusters,
+        n_clusters=5,
         symetric=False,
         max_iter=10000,
         n_init=100,
@@ -83,31 +85,50 @@ class SBM_bernouilli:
         self.n_init_total_run = (
             n_init_total_run if n_init > n_init_total_run else n_init
         )
-        self.nb_iter_early_stop = n_iter_early_stop
+        self.n_iter_early_stop = n_iter_early_stop
         self.tol = tol
         self.verbosity = verbosity
+        self.n_clusters = n_clusters
+        self.symetric = symetric
         self.use_gpu = use_gpu
         self.gpu_index = gpu_index
 
+    def score(self, X, y=None):
+        if not hasattr(self, "loglikelihood_"):
+            self.fit(X)
+        return self.get_ICL()
+
+    def get_params(self, deep=True):
+        return {
+            "max_iter": self.max_iter,
+            "n_init": self.n_init,
+            "n_init_total_run": self.n_init_total_run,
+            "n_iter_early_stop": self.n_iter_early_stop,
+            "tol": self.tol,
+            "verbosity": self.verbosity,
+            "n_clusters": self.n_clusters,
+            "symetric": self.symetric,
+            "use_gpu": self.use_gpu,
+            "gpu_index": self.gpu_index,
+        }
+
+    def set_params(self, **parameters):
+        for parameter, value in parameters.items():
+            setattr(self, parameter, value)
+        return self
+
+    def _check_params(self):
         self._np = np
         self._cupyx = None
-        self._n_clusters = n_clusters
-        self._symetric = symetric
-        self._nb_rows = None
-        self._loglikelihood = -np.inf
-        self._trained_successfully = False
-        self._pi = None
-        self._alpha = None
-        self._tau = None
-        self._run_number = 0
-        self._nb_runs_to_perform = n_init
-        self._np = np
+        self.loglikelihood_ = -np.inf
+        self.trained_successfully_ = False
 
-        if use_gpu and (
+        if self.use_gpu and (
             not _CUPY_INSTALLED
             or not _DEFAULT_USE_GPU
             or not cupy.cuda.is_available()
         ):
+            self.gpu_number = None
             self.use_gpu = False
             print(
                 "GPU not used as cupy library seems not to be installed or CUDA is not available",
@@ -115,7 +136,7 @@ class SBM_bernouilli:
             )
 
         if (
-            use_gpu
+            self.use_gpu
             and _CUPY_INSTALLED
             and _DEFAULT_USE_GPU
             and cupy.cuda.is_available()
@@ -136,38 +157,33 @@ class SBM_bernouilli:
                     cupy.cuda.Device(gpu_number).use()
 
     @property
-    def n_clusters(self):
-        """array_like: Returns the number of classes"""
-        return self._n_clusters
-
-    @property
     def group_membership_probability(self):
         """array_like: Returns the group membership probabilities"""
         assert (
-            self._trained_successfully == True
+            self.trained_successfully_ == True
         ), "Model not trained successfully"
-        return self._alpha
+        return self.alpha_
 
     @property
     def labels(self):
         """array_like: Returns the labels"""
         assert (
-            self._trained_successfully == True
+            self.trained_successfully_ == True
         ), "Model not trained successfully"
-        return self._tau.argmax(1)
+        return self.tau_.argmax(1)
 
     @property
     def predict_proba(self):
         """array_like: Returns the predicted classes membership probabilities"""
         assert (
-            self._trained_successfully == True
+            self.trained_successfully_ == True
         ), "Model not trained successfully"
-        return self._tau
+        return self.tau_
 
     @property
     def trained_successfully(self):
         """bool: Returns the predicted column classes membership probabilities"""
-        return self._trained_successfully
+        return self.trained_successfully_
 
     def get_ICL(self):
         """Computation of the ICL criteria that can be used for model selection.
@@ -177,17 +193,17 @@ class SBM_bernouilli:
             value of the ICL criteria.
         """
         assert (
-            self._trained_successfully == True
+            self.trained_successfully_ == True
         ), "Model must be trained successfully before"
         return (
-            self._loglikelihood
-            - (self._n_clusters - 1) / 2 * np.log(self._nb_rows)
-            - (self._n_clusters ** 2)
+            self.loglikelihood_
+            - (self.n_clusters - 1) / 2 * np.log(self._nb_rows)
+            - (self.n_clusters ** 2)
             / 2
             * np.log(self._nb_rows * (self._nb_rows - 1))
         )
 
-    def fit(self, X):
+    def fit(self, X, y=None):
         """Perform co-clustering by direct maximization of graph modularity.
 
         Parameters
@@ -197,7 +213,8 @@ class SBM_bernouilli:
         use_gpu : False or int
             If not false, use the gpu index specified
         """
-        self._trained_successfully = False
+        self._check_params()
+        self.trained_successfully_ = False
         n, n2 = X.shape
         assert n == n2, "Entry matrix is not squared"
         self._nb_rows = n
@@ -228,9 +245,11 @@ class SBM_bernouilli:
             for run_number in range(self.n_init):
                 if self.verbosity > 0:
                     bar.update(run_number)
-                self._run_number = run_number
                 (success, ll, pi, alpha, tau) = self._fit_single(
-                    indices_ones, n, early_stop=self.nb_iter_early_stop
+                    indices_ones,
+                    n,
+                    early_stop=self.n_iter_early_stop,
+                    run_number=run_number,
                 )
                 calculation_result = [ll, next(tiebreaker), pi, alpha, tau]
                 if len(best_inits) < max(1, int(self.n_init_total_run)):
@@ -258,29 +277,31 @@ class SBM_bernouilli:
                     redirect_stdout=True,
                 ).start()
             # Repeat the whole EM algorithm with several initializations.
-            self._nb_runs_to_perform = len(best_inits)
             for run_number, init in enumerate(best_inits):
-                self._run_number = run_number
                 if self.verbosity > 0:
                     bar.update(run_number)
 
                 (pi, alpha, tau) = (init[2], init[3], init[4])
 
                 (success, ll, pi, alpha, tau) = self._fit_single(
-                    indices_ones, n, init_params=(pi, alpha, tau)
+                    indices_ones,
+                    n,
+                    init_params=(pi, alpha, tau),
+                    run_number=run_number,
                 )
 
-                if success and ll > self._loglikelihood:
-                    self._loglikelihood = ll.get() if self.use_gpu else ll
-                    self._trained_successfully = True
-                    self._pi = pi.get() if self.use_gpu else pi
-                    self._alpha = alpha.get() if self.use_gpu else alpha
-                    self._tau = tau.get() if self.use_gpu else tau
+                if success and ll > self.loglikelihood_:
+                    self.loglikelihood_ = ll.get() if self.use_gpu else ll
+                    self.trained_successfully_ = True
+                    self.pi_ = pi.get() if self.use_gpu else pi
+                    self.alpha_ = alpha.get() if self.use_gpu else alpha
+                    self.tau_ = tau.get() if self.use_gpu else tau
         except KeyboardInterrupt:
             pass
         finally:
             if self.verbosity > 0:
                 bar.finish()
+        return self
 
     def _fit_single(
         self,
@@ -289,6 +310,7 @@ class SBM_bernouilli:
         early_stop=None,
         init_params=None,
         in_place=False,
+        run_number=None,
     ):
         """Perform one run of the SBM_bernouilli algorithm with one random initialization.
 
@@ -303,14 +325,14 @@ class SBM_bernouilli:
         if init_params:
             if init_params is True:
                 if (
-                    self._pi is not None
-                    and self._alpha is not None
-                    and self._tau is not None
+                    self.pi_ is not None
+                    and self.alpha_ is not None
+                    and self.tau_ is not None
                 ):
                     alpha, tau, pi = (
-                        self._np.asarray(self._alpha),
-                        self._np.asarray(self._tau),
-                        self._np.asarray(self._pi),
+                        self._np.asarray(self.alpha_),
+                        self._np.asarray(self.tau_),
+                        self._np.asarray(self.pi_),
                     )
                 else:
                     assert False
@@ -318,7 +340,7 @@ class SBM_bernouilli:
                 (pi, alpha, tau) = init_params
         else:
             alpha, tau, pi = self._init_bernouilli_SBM_random(
-                n, self._n_clusters, len(indices_ones)
+                n, self.n_clusters, len(indices_ones)
             )
 
         # Repeat EM step until convergence.
@@ -340,17 +362,17 @@ class SBM_bernouilli:
             pi, alpha, tau = self._step_EM(indices_ones, pi, alpha, tau, n)
         else:
             success = True
-        if self.verbosity > 1:
+        if self.verbosity > 1 and run_number:
             print(
-                f"Run {self._run_number:3d} / {self._nb_runs_to_perform:3d} \t success : {success} \t log-like: {ll.get()  if self.use_gpu else ll:.4f} \t nb_iter: {iteration:5d}"
+                f"Run {run_number:3d} / {self.n_init:3d} \t success : {success} \t log-like: {ll.get()  if self.use_gpu else ll:.4f} \t nb_iter: {iteration:5d}"
             )
 
         if in_place:
-            self._loglikelihood = ll.get() if self.use_gpu else ll
-            self._trained_successfully = True
-            self._pi = pi.get() if self.use_gpu else pi
-            self._alpha = alpha.get() if self.use_gpu else alpha
-            self._tau = tau.get() if self.use_gpu else tau
+            self.loglikelihood_ = ll.get() if self.use_gpu else ll
+            self.trained_successfully_ = True
+            self.pi_ = pi.get() if self.use_gpu else pi
+            self.alpha_ = alpha.get() if self.use_gpu else alpha
+            self.tau_ = tau.get() if self.use_gpu else tau
 
         return success, ll, pi, alpha, tau
 
@@ -366,7 +388,7 @@ class SBM_bernouilli:
         n : Number of rows in the data matrix.
         """
         eps = 1e-2 / n1
-        nq = self._n_clusters
+        nq = self.n_clusters
 
         ########################## E-step  ##########################
 
@@ -417,7 +439,7 @@ class SBM_bernouilli:
         alpha : Group model parameters.
         tau : Group variationnal parameters.
         """
-        nq = self._n_clusters
+        nq = self.n_clusters
         tau_sum = tau.sum(0)
         ll = (
             -self._np.sum(tau * self._np.log(tau))
@@ -435,7 +457,7 @@ class SBM_bernouilli:
                 * self._np.log(1 - pi)
             ).sum()
         )
-        return ll / 2 if self._symetric else ll
+        return ll / 2 if self.symetric else ll
 
     def _init_bernouilli_SBM_random(self, n1, nq, nb_ones):
         """Randomly initialize the SBM bernouilli model and variationnal parameters.
@@ -456,44 +478,93 @@ class SBM_bernouilli:
         pi = self._np.random.uniform(
             2 * nb_ones / (n1 * n1) / 10, 2 * nb_ones / (n1 * n1), (nq, nq)
         )
-        if self._symetric:
+        if self.symetric:
             pi = (pi @ pi.T) / 2
 
         return (alpha.flatten(), tau, pi)
 
     def __repr__(self):
         return f"""SBM_bernouilli(
-                    n_clusters={self._n_clusters},
+                    n_clusters={self.n_clusters},
                     max_iter={self.max_iter},
                     n_init={self.n_init},
                     n_init_total_run={self.n_init_total_run},
-                    n_iter_early_stop={self.nb_iter_early_stop},
+                    n_iter_early_stop={self.n_iter_early_stop},
                     tol={self.tol},
                     verbosity={self.verbosity},
                     use_gpu={self.use_gpu},
+                    gpu_index={self.gpu_index},
                 )"""
 
     def copy(self):
         """Returns a copy of the model.
         """
         model = SBM_bernouilli(
-            self._n_clusters,
-            symetric=self._symetric,
+            self.n_clusters,
+            symetric=self.symetric,
             max_iter=self.max_iter,
             n_init=self.n_init,
             n_init_total_run=self.n_init_total_run,
-            n_iter_early_stop=self.nb_iter_early_stop,
+            n_iter_early_stop=self.n_iter_early_stop,
             tol=self.tol,
             verbosity=self.verbosity,
             use_gpu=self.use_gpu,
         )
+        model._np = self._np
+        model._cupyx = self._cupyx
         model._nb_rows = self._nb_rows
-        model._loglikelihood = self._loglikelihood
-        model._trained_successfully = self._trained_successfully
-        model._pi = copy.copy(self._pi)
-        model._alpha = copy.copy(self._alpha)
-        model._tau = copy.copy(self._tau)
-        model._run_number = self._run_number
-        model._nb_runs_to_perform = self._nb_runs_to_perform
+        model.loglikelihood_ = self.loglikelihood_
+        model.trained_successfully_ = self.trained_successfully_
+        model.pi_ = copy.copy(self.pi_)
+        model.alpha_ = copy.copy(self.alpha_)
+        model.tau_ = copy.copy(self.tau_)
 
         return model
+
+
+if __name__ == "__main__":
+    from sparsebm import generate_bernouilli_SBM_dataset
+    import sklearn
+
+    number_of_nodes = 10 ** 3
+    number_of_clusters = 4
+    cluster_proportions = (
+        np.ones(number_of_clusters) / number_of_clusters
+    )  # Here equals classe sizes
+    connection_probabilities = (
+        np.array(
+            [
+                [0.05, 0.018, 0.006, 0.0307],
+                [0.018, 0.037, 0, 0],
+                [0.006, 0, 0.055, 0.012],
+                [0.0307, 0, 0.012, 0.043],
+            ]
+        )
+        * 2
+    )  # The probability of link between the classes. Here symetric.
+    assert (
+        number_of_clusters
+        == connection_probabilities.shape[0]
+        == connection_probabilities.shape[1]
+    )
+
+    # Generate The dataset.
+    dataset = generate_bernouilli_SBM_dataset(
+        number_of_nodes,
+        number_of_clusters,
+        connection_probabilities,
+        cluster_proportions,
+        symetric=False,
+    )
+    graph = dataset["data"]
+    cluster_indicator = dataset["cluster_indicator"]
+    clusters_index = cluster_indicator.argmax(1)
+    model = SBM_bernouilli(gpu_number=0)
+    clf = sklearn.model_selection.GridSearchCV(
+        estimator=model,
+        n_jobs=10,
+        param_grid={"n_clusters": list(range(10))},
+        cv=[[list(range(1000)), list(range(1000))]],
+    )
+    clf.fit(graph)
+    print(clf.best_params_)
