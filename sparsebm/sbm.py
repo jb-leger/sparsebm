@@ -90,6 +90,7 @@ class SBM_bernouilli(BaseEstimator):
         self.n_clusters = n_clusters
         self.use_gpu = use_gpu
         self.gpu_index = gpu_index
+        self.symetric = False
 
     def score(self, X, y=None, symetric=False):
         if not hasattr(self, "loglikelihood_"):
@@ -105,7 +106,6 @@ class SBM_bernouilli(BaseEstimator):
             "tol": self.tol,
             "verbosity": self.verbosity,
             "n_clusters": self.n_clusters,
-            "symetric": self.symetric,
             "use_gpu": self.use_gpu,
             "gpu_index": self.gpu_index,
         }
@@ -498,7 +498,6 @@ class SBM_bernouilli(BaseEstimator):
         """
         model = SBM_bernouilli(
             self.n_clusters,
-            symetric=self.symetric,
             max_iter=self.max_iter,
             n_init=self.n_init,
             n_init_total_run=self.n_init_total_run,
@@ -507,6 +506,7 @@ class SBM_bernouilli(BaseEstimator):
             verbosity=self.verbosity,
             use_gpu=self.use_gpu,
         )
+        model.symetric = self.symetric
         model._np = self._np
         model._cupyx = self._cupyx
         model._nb_rows = self._nb_rows
@@ -521,13 +521,11 @@ class SBM_bernouilli(BaseEstimator):
 
 if __name__ == "__main__":
     from sparsebm import generate_bernouilli_SBM_dataset
-    import sklearn
+    import numpy as np
 
     number_of_nodes = 10 ** 3
     number_of_clusters = 4
-    cluster_proportions = (
-        np.ones(number_of_clusters) / number_of_clusters
-    )  # Here equals classe sizes
+    cluster_proportions = np.ones(number_of_clusters) / number_of_clusters
     connection_probabilities = (
         np.array(
             [
@@ -538,30 +536,39 @@ if __name__ == "__main__":
             ]
         )
         * 2
-    )  # The probability of link between the classes. Here symetric.
-    assert (
-        number_of_clusters
-        == connection_probabilities.shape[0]
-        == connection_probabilities.shape[1]
     )
-
-    # Generate The dataset.
     dataset = generate_bernouilli_SBM_dataset(
         number_of_nodes,
         number_of_clusters,
         connection_probabilities,
         cluster_proportions,
-        symetric=False,
+        symetric=True,
     )
+
+    from sparsebm import SBM_bernouilli
+    import sklearn
+    from sklearn import metrics
+
     graph = dataset["data"]
-    cluster_indicator = dataset["cluster_indicator"]
-    clusters_index = cluster_indicator.argmax(1)
-    model = SBM_bernouilli(gpu_number=0)
+    clusters_index = dataset["cluster_indicator"].argmax(1)
+
+    model = SBM_bernouilli(verbosity=0)
+    train = test = np.arange(number_of_nodes)
+    n_clusters = np.arange(1, 10)
     clf = sklearn.model_selection.GridSearchCV(
         estimator=model,
-        n_jobs=10,
-        param_grid={"n_clusters": list(range(10))},
-        cv=[[list(range(1000)), list(range(1000))]],
+        n_jobs=4,
+        param_grid={"n_clusters": list(range(2, 5))},
+        cv=[[train, test]],
     )
-    clf.fit(graph)
-    print(clf.best_params_)
+    print("Start grid search algorithm")
+    clf.fit(graph, symetric=True)
+    print(
+        "Best number of classes is {} according to ICL".format(
+            clf.best_params_
+        )
+    )
+    ari = metrics.adjusted_rand_score(
+        clusters_index, clf.best_estimator_.labels
+    )
+    print("Adjusted Rand Index is {}".format(ari))

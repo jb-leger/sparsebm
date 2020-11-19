@@ -79,7 +79,13 @@ setup(
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=["progressbar2", "scipy", "numpy", "gputil"],  # Optional
+    install_requires=[
+        "progressbar2",
+        "scipy",
+        "numpy",
+        "gputil",
+        "scikit-learn",
+    ],  # Optional
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
     # syntax, for example:
@@ -97,6 +103,7 @@ setup(
     # For example, the following would provide a command called `sample` which
     # executes the function `main` from this package when invoked:
     # entry_points={"console_scripts": ["sample=sample:main"]},  # Optional
+    entry_points={"console_scripts": ["sparsebm = sparsebm.entry_point:main"]},
     # List additional URLs that are relevant to your project as a dict.
     #
     # This field corresponds to the "Project-URL" metadata fields:

@@ -7,6 +7,7 @@ import scipy.sparse as sp
 from sparsebm import (
     SBM_bernouilli,
     LBM_bernouilli,
+    ModelSelection,
     generate_bernouilli_LBM_dataset,
     generate_bernouilli_SBM_dataset,
 )
@@ -20,7 +21,7 @@ except ImportError:
     _DEFAULT_USE_GPU = False
 
 
-def parsers():
+def define_parsers():
     main = argparse.ArgumentParser(prog="sparsebm")
     subparsers = main.add_subparsers(
         help="algorithm to use", dest="subparser_name"
@@ -32,23 +33,103 @@ def parsers():
     lbm_parser = subparsers.add_parser(
         "lbm", help="use the latent block model"
     )
+    ms_parser = subparsers.add_parser(
+        "modelselection", help="use the model selection with LBM or SBM"
+    )
+    input_grp = ms_parser.add_argument_group("mandatory arguments")
+    input_grp.add_argument(
+        "ADJACENCY_MATRIX", help="List of edges in CSV format"
+    )
+    input_grp.add_argument(
+        "-t",
+        "--type",
+        help="model to use. Either 'lbm' or 'sbm'",
+        required=True,
+    )
+    input_grp = ms_parser.add_argument_group("optional arguments")
+    input_grp.add_argument(
+        "-sep",
+        "--sep",
+        default=",",
+        help="CSV delimiter to use. Default is ',' ",
+    )
+    input_grp.add_argument(
+        "-gpu",
+        "--use_gpu",
+        help="specify if a GPU should be used.",
+        default=_DEFAULT_USE_GPU,
+        type=bool,
+    )
+    input_grp.add_argument(
+        "-idgpu",
+        "--gpu_index",
+        help="specify the gpu index if needed.",
+        default=None,
+        type=bool,
+    )
+    input_grp.add_argument(
+        "-s",
+        "--symetric",
+        help="specify if the adajacency matrix is symetric. For sbm only",
+        default=False,
+    )
+    input_grp.add_argument(
+        "-p", "--plot", help="display model exploration plot", default=True
+    )
+    output_grp = ms_parser.add_argument_group("output")
+    output_grp.add_argument(
+        "-o",
+        "--output",
+        help="File path for the json results.",
+        default="results.json",
+    )
 
     generate_sbm_parser = subparsers.add_parser(
         "generate", help="use sparsebm to generate a data matrix"
     )
     generate_sbm_parser.add_argument_group("json_conf_file")
-    generate_sbm_parser.add_argument(
-        "JSON_FILE",
-        help="A json configuration file that specify the parameters of the data to generate.",
-    )
+    help_example = """A json configuration file that specify the parameters of
+    the data to generate. \n Example of json configuration file for SBM: \n{\n
+    "type": "sbm",\n  "number_of_nodes": 1000,\n  "number_of_clusters": 4,\n
+    "symetric": true,\n  "connection_probabilities": [\n    [\n      0.1,\n
+      0.036,\n      0.012,\n      0.0614\n    ],\n    [\n      0.036,\n
+        0.074,\n      0,\n      0\n    ],\n    [\n      0.012,\n      0,\n
+          0.11,\n      0.024\n    ],\n    [\n      0.0614,\n      0,\n
+          0.024,\n      0.086\n    ]\n  ],\n  "cluster_proportions": [\n    0.25
+          ,\n    0.25,\n    0.25,\n    0.25\n  ]\n}"""
+    generate_sbm_parser.add_argument("JSON_FILE", help=help_example)
 
     for parser in [sbm_parser, lbm_parser]:
-        input_grp = parser.add_argument_group("adjacency_matrix")
-        input_grp.add_argument("ADJACENCY_MATRIX", help="matrix file path")
-        input_params_grp = input_grp.add_mutually_exclusive_group()
-        input_params_grp.add_argument(
-            "-sep", "--sep", default=",", help="Delimiter to use. Default:',' "
+        input_grp = parser.add_argument_group("mandatory arguments")
+        input_grp.add_argument(
+            "ADJACENCY_MATRIX", help="List of edges in CSV format"
         )
+        if parser == lbm_parser:
+            input_grp.add_argument(
+                "-k1",
+                "--n_row_clusters",
+                help="number of row clusters",
+                default=4,
+                type=int,
+                required=True,
+            )
+            input_grp.add_argument(
+                "-k2",
+                "--n_column_clusters",
+                help="number of row clusters",
+                default=4,
+                type=int,
+                required=True,
+            )
+        if parser == sbm_parser:
+            input_grp.add_argument(
+                "-k",
+                "--n_clusters",
+                help="number of clusters",
+                default=4,
+                type=int,
+                required=True,
+            )
 
         output_grp = parser.add_argument_group("output")
         output_grp.add_argument(
@@ -58,30 +139,14 @@ def parsers():
             default="results.json",
         )
 
-        param_grp = parser.add_argument_group("Parameters for the algorithm.")
-        if parser == lbm_parser:
-            param_grp.add_argument(
-                "-k1",
-                "--n_row_clusters",
-                help="number of row clusters",
-                default=4,
-                type=int,
-            )
-            param_grp.add_argument(
-                "-k2",
-                "--n_column_clusters",
-                help="number of row clusters",
-                default=4,
-                type=int,
-            )
+        param_grp = parser.add_argument_group("optional arguments")
+        param_grp.add_argument(
+            "-sep",
+            "--sep",
+            default=",",
+            help="CSV delimiter to use. Default is ',' ",
+        )
         if parser == sbm_parser:
-            param_grp.add_argument(
-                "-k",
-                "--n_clusters",
-                help="number of clusters",
-                default=4,
-                type=int,
-            )
             param_grp.add_argument(
                 "-s",
                 "--symetric",
@@ -113,7 +178,8 @@ def parsers():
         param_grp.add_argument(
             "-ninitt",
             "--n_init_total_run",
-            help="Number of the best initializations that will be run until convergence.",
+            help="Number of the best initializations that will be run\
+            until convergence.",
             default=10,
             type=int,
         )
@@ -127,7 +193,8 @@ def parsers():
         param_grp.add_argument(
             "-v",
             "--verbosity",
-            help="Degree of verbosity. Scale from 0 (no message displayed) to 3.",
+            help="Degree of verbosity. Scale from 0 (no message displayed)\
+             to 3.",
             default=1,
             type=int,
         )
@@ -249,7 +316,6 @@ def process_sbm(args):
 
 
 def process_lbm(args):
-    print(args)
     graph, row_from_to, col_from_to = graph_from_csv(
         args["ADJACENCY_MATRIX"], args["subparser_name"], sep=args["sep"]
     )
@@ -321,7 +387,7 @@ def generate(args):
             or "cluster_proportions" not in conf
             or "symetric" not in conf
         ):
-            print(
+            raise Exception(
                 "Field 'number_of_nodes', 'number_of_clusters', \
                 'connection_probabilities', 'cluster_proportions', \
                 'symetric' must be in configuration file."
@@ -363,7 +429,7 @@ def generate(args):
             or "row_cluster_proportions" not in conf
             or "column_cluster_proportions" not in conf
         ):
-            print(
+            raise Exception(
                 "Field 'number_of_rows', 'number_of_columns', 'nb_row_clusters', \
                 'nb_column_clusters', 'connection_probabilities', \
                 'row_cluster_proportions', 'column_cluster_proportions' \
@@ -422,12 +488,106 @@ def generate(args):
     print("Edges saved in {}".format(file_edges))
 
 
+def process_model_selection(args):
+    if args["type"].upper() not in ["SBM", "LBM"]:
+        raise Exception("Invalid type argument. Must be 'SBM' or 'LBM'")
+    graph, row_from_to, col_from_to = graph_from_csv(
+        args["ADJACENCY_MATRIX"], args["subparser_name"], sep=args["sep"]
+    )
+
+    model_selection = ModelSelection(
+        graph,
+        model_type=args["type"].upper(),
+        use_gpu=args["use_gpu"],
+        gpu_index=args["gpu_index"],
+        symetric=args["symetric"],
+        plot=args["plot"],
+    )
+    model = model_selection.fit()
+
+    if not model.trained_successfully:
+        print("FAILED, model has not been trained successfully.")
+        return None
+    print("Model has been trained successfully.")
+    print(
+        "Value of the Integrated Completed Loglikelihood is {:.4f}".format(
+            model.get_ICL()
+        )
+    )
+    if args["type"] == "lbm":
+        print(
+            "The model selection picked {} row classes".format(
+                model.n_row_clusters
+            )
+        )
+        print(
+            "The model selection picked {} column classes".format(
+                model.n_column_clusters
+            )
+        )
+        nb_row_clusters = model.n_row_clusters
+        nb_column_clusters = model.n_column_clusters
+        row_labels = model.row_labels
+        row_groups = [
+            np.argwhere(row_labels == q).flatten()
+            for q in range(nb_row_clusters)
+        ]
+        row_to_from = {v: k for k, v in row_from_to.items()}
+        row_groups = [
+            pd.Series(g).map(row_to_from).tolist() for g in row_groups
+        ]
+
+        col_labels = model.column_labels
+        col_groups = [
+            np.argwhere(col_labels == q).flatten()
+            for q in range(nb_column_clusters)
+        ]
+        col_to_from = {v: k for k, v in col_from_to.items()}
+        col_groups = [
+            pd.Series(g).map(col_to_from).tolist() for g in col_groups
+        ]
+
+        results = {
+            "ILC": model.get_ICL(),
+            "nb_row_clusters": nb_row_clusters,
+            "nb_column_clusters": nb_column_clusters,
+            "edge_probability_between_groups": model.pi_.tolist(),
+            "row_group_membership_probability": model.row_group_membership_probability.flatten().tolist(),
+            "column_group_membership_probability": model.column_group_membership_probability.flatten().tolist(),
+            "node_type_1_ids_clustered": row_groups,
+            "node_type_2_ids_clustered": col_groups,
+        }
+    else:
+        print("The model selection picked {} classes".format(model.n_clusters))
+        nb_clusters = model.n_clusters
+        labels = model.labels
+        groups = [
+            np.argwhere(labels == q).flatten() for q in range(nb_clusters)
+        ]
+        row_to_from = {v: k for k, v in row_from_to.items()}
+        groups = [pd.Series(g).map(row_to_from).tolist() for g in groups]
+
+        results = {
+            "ILC": model.get_ICL(),
+            "nb_clusters": nb_clusters,
+            "edge_probability_between_groups": model.pi_.tolist(),
+            "group_membership_probability": model.group_membership_probability.flatten().tolist(),
+            "node_ids_clustered": groups,
+        }
+
+    with open(args["output"], "w") as outfile:
+        json.dump(results, outfile)
+    print("Results saved in {}".format(args["output"]))
+
+
 def main():
-    parsers = parsers()
+    parsers = define_parsers()
     args = vars(parsers.parse_args())
     if args["subparser_name"] == "sbm":
         process_sbm(args)
     elif args["subparser_name"] == "lbm":
         process_lbm(args)
+    elif args["subparser_name"] == "modelselection":
+        process_model_selection(args)
     elif args["subparser_name"] == "generate":
         generate(args)
