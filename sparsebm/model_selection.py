@@ -71,7 +71,7 @@ class ModelSelection:
                 n_init=1,
                 n_init_total_run=1,
                 n_iter_early_stop=1,
-                tol=1e-3,
+                tol=1e-6,
                 verbosity=0,
                 use_gpu=use_gpu,
                 gpu_index=gpu_index,
@@ -85,7 +85,7 @@ class ModelSelection:
                 n_init=1,
                 n_init_total_run=1,
                 n_iter_early_stop=1,
-                tol=1e-3,
+                tol=1e-6,
                 verbosity=0,
             )
             model.fit(graph, symetric=symetric)
@@ -134,7 +134,7 @@ class ModelSelection:
                 self.model_explored = self._explore_strategy(strategy="merge")
                 best_iter_model = self.selected_model
                 best_icl.append(best_iter_model.get_ICL())
-                print("Best icl is {:.2f}".format(best_icl[-1]))
+                print("Best icl is {:.4f}".format(best_icl[-1]))
                 if len(best_icl) > 3 and best_icl[-3] == best_icl[-1]:
                     break
         except KeyboardInterrupt:

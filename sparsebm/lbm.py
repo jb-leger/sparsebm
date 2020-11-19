@@ -78,7 +78,7 @@ class LBM_bernouilli(BaseEstimator):
         n_init=100,
         n_init_total_run=10,
         n_iter_early_stop=100,
-        tol=1e-5,
+        tol=1e-8,
         verbosity=1,
         use_gpu=_DEFAULT_USE_GPU,
         gpu_index=None,
@@ -421,7 +421,7 @@ class LBM_bernouilli(BaseEstimator):
                 ll = self._compute_likelihood(
                     indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2
                 )
-                if self._np.abs((old_ll - ll) / old_ll) < self.tol:
+                if self._np.abs((old_ll - ll) / ll) < self.tol:
                     success = True
                     break
                 if self.verbosity > 2:

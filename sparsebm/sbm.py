@@ -74,7 +74,7 @@ class SBM_bernouilli(BaseEstimator):
         n_init=100,
         n_init_total_run=10,
         n_iter_early_stop=100,
-        tol=1e-5,
+        tol=1e-8,
         verbosity=1,
         use_gpu=_DEFAULT_USE_GPU,
         gpu_index=None,
@@ -347,7 +347,7 @@ class SBM_bernouilli(BaseEstimator):
                 break
             if iteration % 10 == 0:
                 ll = self._compute_likelihood(indices_ones, pi, alpha, tau)
-                if self._np.abs((old_ll - ll) / old_ll) < self.tol:
+                if self._np.abs((old_ll - ll) / ll) < self.tol:
                     success = True
                     break
                 if self.verbosity > 2:
@@ -552,7 +552,14 @@ if __name__ == "__main__":
     graph = dataset["data"]
     clusters_index = dataset["cluster_indicator"].argmax(1)
 
-    model = SBM_bernouilli(verbosity=0)
+    model = SBM_bernouilli(verbosity=3, tol=1e-7)
+    model.fit(graph, symetric=True)
+    print(
+        "Adjusted Rand Index is {}".format(
+            metrics.adjusted_rand_score(model.labels, clusters_index)
+        )
+    )
+
     train = test = np.arange(number_of_nodes)
     n_clusters = np.arange(1, 10)
     clf = sklearn.model_selection.GridSearchCV(

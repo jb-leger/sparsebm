@@ -187,7 +187,7 @@ def define_parsers():
             "-t",
             "--tol",
             help="Tolerance of likelihood to declare convergence.",
-            default=1e-5,
+            default=1e-8,
             type=float,
         )
         param_grp.add_argument(
