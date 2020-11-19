@@ -467,8 +467,8 @@ class LBM_bernouilli(BaseEstimator):
         n1 : Number of rows in the data matrix.
         n2 : Number of columns in the data matrix.
         """
-        eps_1 = 1e-2 / n1
-        eps_2 = 1e-2 / n2
+        eps_1 = 1e-8
+        eps_2 = 1e-8
         nq, nl = self.n_row_clusters, self.n_column_clusters
 
         ########################## E-step  ##########################

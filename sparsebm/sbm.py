@@ -384,7 +384,7 @@ class SBM_bernouilli(BaseEstimator):
         tau : Group variationnal parameters.
         n : Number of rows in the data matrix.
         """
-        eps = 1e-2 / n1
+        eps = 1e-9
         nq = self.n_clusters
 
         ########################## E-step  ##########################
@@ -560,12 +560,13 @@ if __name__ == "__main__":
         n_jobs=4,
         param_grid={"n_clusters": list(range(2, 5))},
         cv=[[train, test]],
+        verbose=1,
     )
     print("Start grid search algorithm")
     clf.fit(graph, symetric=True)
     print(
         "Best number of classes is {} according to ICL".format(
-            clf.best_params_
+            clf.best_params_["n_clusters"]
         )
     )
     ari = metrics.adjusted_rand_score(
