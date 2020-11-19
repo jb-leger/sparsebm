@@ -345,7 +345,7 @@ class SBM_bernouilli(BaseEstimator):
             if early_stop and iteration >= early_stop:
                 ll = self._compute_likelihood(indices_ones, pi, alpha, tau)
                 break
-            if iteration % 5 == 0:
+            if iteration % 10 == 0:
                 ll = self._compute_likelihood(indices_ones, pi, alpha, tau)
                 if self._np.abs((old_ll - ll) / old_ll) < self.tol:
                     success = True
