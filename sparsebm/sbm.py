@@ -347,7 +347,7 @@ class SBM_bernouilli(BaseEstimator):
                 break
             if iteration % 5 == 0:
                 ll = self._compute_likelihood(indices_ones, pi, alpha, tau)
-                if self._np.abs(old_ll - ll) < self.tol:
+                if self._np.abs((old_ll - ll) / old_ll) < self.tol:
                     success = True
                     break
                 if self.verbosity > 2:
@@ -557,8 +557,8 @@ if __name__ == "__main__":
     n_clusters = np.arange(1, 10)
     clf = sklearn.model_selection.GridSearchCV(
         estimator=model,
-        n_jobs=4,
-        param_grid={"n_clusters": list(range(2, 5))},
+        n_jobs=6,
+        param_grid={"n_clusters": list(range(2, 8))},
         cv=[[train, test]],
         verbose=1,
     )
