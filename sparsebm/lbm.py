@@ -42,8 +42,11 @@ class LBM_bernouilli(BaseEstimator):
     n_iter_early_stop : int, optional, default: 100
         Number of EM iterations to used to run the n_init initializations.
 
-    tol : float, default: 1e-5
-        Tolerance to declare convergence
+    rtol : float, default: 1e-8
+        The relative tolerance parameter (see Notes).
+
+    atol : float, default: 1e-9
+        The absolute tolerance parameter (see Notes).
 
     verbosity : int, optional, default: 1
         Degree of verbosity. Scale from 0 (no message displayed) to 3.
@@ -64,10 +67,19 @@ class LBM_bernouilli(BaseEstimator):
         Number of the n_init best initializations that will be run until convergence.
     nb_iter_early_stop : int
         Number of EM iterations to used to run the n_init initializations.
-    tol : int
-        Tolerance to declare convergence
+    rtol : float
+        The relative tolerance parameter (see Notes).
+    atol : float
+        The absolute tolerance parameter (see Notes).
     verbosity : int
         Degree of verbosity. Scale from 0 (no message displayed) to 3.
+
+    Notes
+    -----
+    Convergence of the EM algorithm is declared when
+    absolute(old_loglikelihood - new_loglikelihood) <=
+    (`atol` + `rtol` * absolute(new_loglikelihood)). The convergence is checked
+    every 10 EM steps.
     """
 
     def __init__(
@@ -77,8 +89,9 @@ class LBM_bernouilli(BaseEstimator):
         max_iter=10000,
         n_init=100,
         n_init_total_run=10,
-        n_iter_early_stop=100,
-        tol=1e-8,
+        n_iter_early_stop=10,
+        rtol=1e-8,
+        atol=1e-9,
         verbosity=1,
         use_gpu=_DEFAULT_USE_GPU,
         gpu_index=None,
@@ -89,7 +102,8 @@ class LBM_bernouilli(BaseEstimator):
             n_init_total_run if n_init > n_init_total_run else n_init
         )
         self.nb_iter_early_stop = n_iter_early_stop
-        self.tol = tol
+        self.atol = atol
+        self.rtol = rtol
         self.verbosity = verbosity
         self.n_row_clusters = n_row_clusters
         self.n_column_clusters = n_column_clusters
@@ -153,7 +167,8 @@ class LBM_bernouilli(BaseEstimator):
             "n_init": self.n_init,
             "n_init_total_run": self.n_init_total_run,
             "n_iter_early_stop": self.n_iter_early_stop,
-            "tol": self.tol,
+            "rtol": self.rtol,
+            "atol": self.atol,
             "verbosity": self.verbosity,
             "n_row_clusters": self.n_row_clusters,
             "n_column_clusters": self.n_column_clusters,
@@ -421,7 +436,9 @@ class LBM_bernouilli(BaseEstimator):
                 ll = self._compute_likelihood(
                     indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2
                 )
-                if self._np.abs((old_ll - ll) / ll) < self.tol:
+                if self._np.abs(old_ll - ll) < (
+                    self.atol + self.rtol * self._np.abs(ll)
+                ):
                     success = True
                     break
                 if self.verbosity > 2:
@@ -593,7 +610,8 @@ class LBM_bernouilli(BaseEstimator):
                     n_init={self.n_init},
                     n_init_total_run={self.n_init_total_run},
                     n_iter_early_stop={self.nb_iter_early_stop},
-                    tol={self.tol},
+                    rtol={self.rtol},
+                    atol={self.atol},
                     verbosity={self.verbosity},
                     use_gpu={self.use_gpu},
                 )"""
@@ -608,7 +626,8 @@ class LBM_bernouilli(BaseEstimator):
             self.n_init,
             self.n_init_total_run,
             self.nb_iter_early_stop,
-            self.tol,
+            self.rtol,
+            self.atol,
             self.verbosity,
             self.use_gpu,
         )

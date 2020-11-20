@@ -39,8 +39,11 @@ class SBM_bernouilli(BaseEstimator):
     n_iter_early_stop : int, optional, default: 100
         Number of EM iterations to used to run the n_init initializations.
 
-    tol : float, default: 1e-5
-        Tolerance to declare convergence
+    rtol : float, default: 1e-8
+        The relative tolerance parameter (see Notes).
+
+    atol : float, default: 1e-9
+        The absolute tolerance parameter (see Notes).
 
     verbosity : int, optional, default: 1
         Degree of verbosity. Scale from 0 (no message displayed) to 3.
@@ -61,10 +64,19 @@ class SBM_bernouilli(BaseEstimator):
         Number of the n_init best initializations that will be run until convergence.
     n_iter_early_stop : int
         Number of EM iterations to used to run the n_init initializations.
-    tol : int
-        Tolerance to declare convergence
+    rtol : float
+        The relative tolerance parameter (see Notes).
+    atol : float
+        The absolute tolerance parameter (see Notes).
     verbosity : int
         Degree of verbosity. Scale from 0 (no message displayed) to 3.
+
+    Notes
+    -----
+    Convergence of the EM algorithm is declared when
+    absolute(old_loglikelihood - new_loglikelihood) <=
+    (`atol` + `rtol` * absolute(new_loglikelihood)). The convergence is checked
+    every 10 EM steps.
     """
 
     def __init__(
@@ -73,8 +85,9 @@ class SBM_bernouilli(BaseEstimator):
         max_iter=10000,
         n_init=100,
         n_init_total_run=10,
-        n_iter_early_stop=100,
-        tol=1e-8,
+        n_iter_early_stop=10,
+        rtol=1e-8,
+        atol=1e-9,
         verbosity=1,
         use_gpu=_DEFAULT_USE_GPU,
         gpu_index=None,
@@ -85,7 +98,8 @@ class SBM_bernouilli(BaseEstimator):
             n_init_total_run if n_init > n_init_total_run else n_init
         )
         self.n_iter_early_stop = n_iter_early_stop
-        self.tol = tol
+        self.atol = atol
+        self.rtol = rtol
         self.verbosity = verbosity
         self.n_clusters = n_clusters
         self.use_gpu = use_gpu
@@ -103,7 +117,8 @@ class SBM_bernouilli(BaseEstimator):
             "n_init": self.n_init,
             "n_init_total_run": self.n_init_total_run,
             "n_iter_early_stop": self.n_iter_early_stop,
-            "tol": self.tol,
+            "rtol": self.rtol,
+            "atol": self.atol,
             "verbosity": self.verbosity,
             "n_clusters": self.n_clusters,
             "use_gpu": self.use_gpu,
@@ -347,7 +362,9 @@ class SBM_bernouilli(BaseEstimator):
                 break
             if iteration % 10 == 0:
                 ll = self._compute_likelihood(indices_ones, pi, alpha, tau)
-                if self._np.abs((old_ll - ll) / ll) < self.tol:
+                if self._np.abs(old_ll - ll) < (
+                    self.atol + self.rtol * self._np.abs(ll)
+                ):
                     success = True
                     break
                 if self.verbosity > 2:
@@ -502,7 +519,8 @@ class SBM_bernouilli(BaseEstimator):
             n_init=self.n_init,
             n_init_total_run=self.n_init_total_run,
             n_iter_early_stop=self.n_iter_early_stop,
-            tol=self.tol,
+            rtol=self.rtol,
+            atol=self.atol,
             verbosity=self.verbosity,
             use_gpu=self.use_gpu,
         )
@@ -552,31 +570,24 @@ if __name__ == "__main__":
     graph = dataset["data"]
     clusters_index = dataset["cluster_indicator"].argmax(1)
 
-    model = SBM_bernouilli(verbosity=3, tol=1e-7)
-    model.fit(graph, symetric=True)
-    print(
-        "Adjusted Rand Index is {}".format(
-            metrics.adjusted_rand_score(model.labels, clusters_index)
-        )
-    )
-
+    model = SBM_bernouilli(verbosity=0)
     train = test = np.arange(number_of_nodes)
-    n_clusters = np.arange(1, 10)
+    n_clusters = [1, 2, 3, 4, 5, 6, 7, 8]
     clf = sklearn.model_selection.GridSearchCV(
         estimator=model,
-        n_jobs=6,
-        param_grid={"n_clusters": list(range(2, 8))},
+        n_jobs=4,
+        param_grid={"n_clusters": n_clusters},
         cv=[[train, test]],
         verbose=1,
     )
     print("Start grid search algorithm")
     clf.fit(graph, symetric=True)
+    ari = metrics.adjusted_rand_score(
+        clusters_index, clf.best_estimator_.labels
+    )
     print(
         "Best number of classes is {} according to ICL".format(
             clf.best_params_["n_clusters"]
         )
-    )
-    ari = metrics.adjusted_rand_score(
-        clusters_index, clf.best_estimator_.labels
     )
     print("Adjusted Rand Index is {}".format(ari))

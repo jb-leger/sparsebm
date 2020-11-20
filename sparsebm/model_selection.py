@@ -71,7 +71,6 @@ class ModelSelection:
                 n_init=1,
                 n_init_total_run=1,
                 n_iter_early_stop=1,
-                tol=1e-6,
                 verbosity=0,
                 use_gpu=use_gpu,
                 gpu_index=gpu_index,
@@ -85,7 +84,6 @@ class ModelSelection:
                 n_init=1,
                 n_init_total_run=1,
                 n_iter_early_stop=1,
-                tol=1e-6,
                 verbosity=0,
             )
             model.fit(graph, symetric=symetric)
