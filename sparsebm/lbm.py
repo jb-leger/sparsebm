@@ -4,7 +4,6 @@ import progressbar
 import numpy as np
 from heapq import heappush, heappushpop
 from itertools import count
-from sklearn.utils.estimator_checks import check_estimator
 from sklearn.base import BaseEstimator
 
 try:
@@ -77,8 +76,8 @@ class LBM_bernouilli(BaseEstimator):
     Notes
     -----
     Convergence of the EM algorithm is declared when
-    absolute(old_loglikelihood - new_loglikelihood) <=
-    (`atol` + `rtol` * absolute(new_loglikelihood)). The convergence is checked
+    old_loglikelihood - new_loglikelihood <=
+    (`atol` + `rtol` * abs(new_loglikelihood)). The convergence is checked
     every 10 EM steps.
     """
 
@@ -86,12 +85,13 @@ class LBM_bernouilli(BaseEstimator):
         self,
         n_row_clusters=4,
         n_column_clusters=4,
+        *,
         max_iter=10000,
         n_init=100,
         n_init_total_run=10,
         n_iter_early_stop=10,
-        rtol=1e-8,
-        atol=1e-9,
+        rtol=1e-10,
+        atol=1e-4,
         verbosity=1,
         use_gpu=_DEFAULT_USE_GPU,
         gpu_index=None,
@@ -436,9 +436,7 @@ class LBM_bernouilli(BaseEstimator):
                 ll = self._compute_likelihood(
                     indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2
                 )
-                if self._np.abs(old_ll - ll) < (
-                    self.atol + self.rtol * self._np.abs(ll)
-                ):
+                if (old_ll - ll) < (self.atol + self.rtol * self._np.abs(ll)):
                     success = True
                     break
                 if self.verbosity > 2:
@@ -484,8 +482,9 @@ class LBM_bernouilli(BaseEstimator):
         n1 : Number of rows in the data matrix.
         n2 : Number of columns in the data matrix.
         """
-        eps_1 = 1e-8
-        eps_2 = 1e-8
+
+        eps_1 = max(1e-4 / n1, 1e-9)
+        eps_2 = max(1e-4 / n2, 1e-9)
         nq, nl = self.n_row_clusters, self.n_column_clusters
 
         ########################## E-step  ##########################

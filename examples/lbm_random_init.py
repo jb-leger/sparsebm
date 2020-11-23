@@ -68,9 +68,8 @@ model = LBM_bernouilli(
     nb_row_clusters,  # A number of row classes must be specify. Otherwise see model selection.
     nb_column_clusters,  # A number of column classes must be specify. Otherwise see model selection.
     n_init=100,  # Specifying the number of initializations to perform.
-    n_iter_early_stop=50,  # Specifying the number of EM-steps to perform on each init.
-    n_init_total_run=10,  # Specifying the number inits to keep and to train until convergence.
-    tol=1e-8,  # Tolerance to declare convergence
+    n_iter_early_stop=10,  # Specifying the number of EM-steps to perform on each init.
+    n_init_total_run=5,  # Specifying the number inits to keep and to train until convergence.
     verbosity=1,  # Either 0, 1 or 2. Higher value display more information to the user.
 )
 model.fit(graph)

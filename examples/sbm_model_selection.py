@@ -24,16 +24,13 @@ number_of_clusters = 4
 cluster_proportions = (
     np.ones(number_of_clusters) / number_of_clusters
 )  # Here equals classe sizes
-connection_probabilities = (
-    np.array(
-        [
-            [0.05, 0.018, 0.006, 0.0307],
-            [0.018, 0.037, 0, 0],
-            [0.006, 0, 0.055, 0.012],
-            [0.0307, 0, 0.012, 0.043],
-        ]
-    )
-    * 2
+connection_probabilities = np.array(
+    [
+        [0.05, 0.018, 0.006, 0.0307],
+        [0.018, 0.037, 0, 0],
+        [0.006, 0, 0.055, 0.012],
+        [0.0307, 0, 0.012, 0.043],
+    ]
 )  # The probability of link between the classes. Here symetric.
 assert (
     number_of_clusters

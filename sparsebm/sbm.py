@@ -74,7 +74,7 @@ class SBM_bernouilli(BaseEstimator):
     Notes
     -----
     Convergence of the EM algorithm is declared when
-    absolute(old_loglikelihood - new_loglikelihood) <=
+    old_loglikelihood - new_loglikelihood <=
     (`atol` + `rtol` * absolute(new_loglikelihood)). The convergence is checked
     every 10 EM steps.
     """
@@ -82,12 +82,13 @@ class SBM_bernouilli(BaseEstimator):
     def __init__(
         self,
         n_clusters=5,
+        *,
         max_iter=10000,
         n_init=100,
         n_init_total_run=10,
         n_iter_early_stop=10,
-        rtol=1e-8,
-        atol=1e-9,
+        rtol=1e-10,
+        atol=1e-4,
         verbosity=1,
         use_gpu=_DEFAULT_USE_GPU,
         gpu_index=None,
@@ -362,9 +363,7 @@ class SBM_bernouilli(BaseEstimator):
                 break
             if iteration % 10 == 0:
                 ll = self._compute_likelihood(indices_ones, pi, alpha, tau)
-                if self._np.abs(old_ll - ll) < (
-                    self.atol + self.rtol * self._np.abs(ll)
-                ):
+                if (old_ll - ll) < (self.atol + self.rtol * self._np.abs(ll)):
                     success = True
                     break
                 if self.verbosity > 2:
@@ -401,7 +400,7 @@ class SBM_bernouilli(BaseEstimator):
         tau : Group variationnal parameters.
         n : Number of rows in the data matrix.
         """
-        eps = 1e-9
+        eps = max(1e-4 / n1, 1e-9)
         nq = self.n_clusters
 
         ########################## E-step  ##########################
