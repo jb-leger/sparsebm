@@ -31,7 +31,7 @@ connection_probabilities = np.array(
         [0.006, 0, 0.055, 0.012],
         [0.0307, 0, 0.012, 0.043],
     ]
-)  # The probability of link between the classes. Here symetric.
+)  # The probability of link between the classes. Here symmetric.
 assert (
     number_of_clusters
     == connection_probabilities.shape[0]
@@ -44,7 +44,7 @@ dataset = generate_bernouilli_SBM_dataset(
     number_of_clusters,
     connection_probabilities,
     cluster_proportions,
-    symetric=True,
+    symmetric=True,
 )
 graph = dataset["data"]
 cluster_indicator = dataset["cluster_indicator"]
@@ -55,7 +55,7 @@ clusters_index = cluster_indicator.argmax(1)
 sbm_model_selection = ModelSelection(
     graph,
     model_type="SBM",  # Either 'LBM' or 'SBM', the model used to cluster the data.
-    symetric=True,  # Specifying if the generated data matrix is symetric.
+    symmetric=True,  # Specifying if the generated data matrix is symmetric.
     plot=True,  # display illustration of the model selection algorithm.
 )
 

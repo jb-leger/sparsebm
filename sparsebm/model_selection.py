@@ -24,7 +24,7 @@ class ModelSelection:
         model_type: str,
         use_gpu: Optional[bool] = True,
         gpu_index: Optional[int] = None,
-        symetric: Optional[bool] = False,
+        symmetric: Optional[bool] = False,
         plot: Optional[bool] = True,
     ) -> None:
         """
@@ -38,8 +38,8 @@ class ModelSelection:
             Specify if a GPU should be used.
         gpu_index : int, optional, default: None
             Specify the gpu index if needed.
-        symetric : bool, optional, default: False
-            In case of SBM model, specify if the graph connections are symetric.
+        symmetric : bool, optional, default: False
+            In case of SBM model, specify if the graph connections are symmetric.
         plot : bool, optional, default: True
             Display model exploration plot.
         """
@@ -59,7 +59,7 @@ class ModelSelection:
         self._model_type = model_type
         self._use_gpu = use_gpu
         self._gpu_index = gpu_index
-        self._symetric = symetric
+        self._symmetric = symmetric
         self._plot = plot
         self._figure = plt.subplots(1) if plot else None
 
@@ -86,7 +86,7 @@ class ModelSelection:
                 n_iter_early_stop=1,
                 verbosity=0,
             )
-            model.fit(graph, symetric=symetric)
+            model.fit(graph, symmetric=symmetric)
 
         nnq = (
             model.n_row_clusters + model.n_column_clusters
@@ -148,7 +148,7 @@ class ModelSelection:
                     graph=<{type(self.graph).__name__} at {hex(id(self.graph))}>,
                     model_type={self._model_type},
                     use_gpu={self._use_gpu},
-                    symetric={self._symetric},
+                    symmetric={self._symmetric},
                 )"""
 
     def _explore_strategy(self, strategy: str):

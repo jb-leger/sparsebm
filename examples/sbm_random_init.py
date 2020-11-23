@@ -33,7 +33,7 @@ connection_probabilities = (
         ]
     )
     * 2
-)  # The probability of link between the classes. Here symetric.
+)  # The probability of link between the classes. Here symmetric.
 assert (
     number_of_clusters
     == connection_probabilities.shape[0]
@@ -46,7 +46,7 @@ dataset = generate_bernouilli_SBM_dataset(
     number_of_clusters,
     connection_probabilities,
     cluster_proportions,
-    symetric=False,
+    symmetric=False,
 )
 graph = dataset["data"]
 cluster_indicator = dataset["cluster_indicator"]
@@ -60,7 +60,7 @@ model = SBM_bernouilli(
     n_init_total_run=10,  # Specifying the number inits to keep and to train until convergence.
     verbosity=1,  # Either 0, 1 or 2. Higher value display more information to the user.
 )
-model.fit(graph, symetric=True)
+model.fit(graph, symmetric=True)
 
 if model.trained_successfully:
     print("Model has been trained successfully.")

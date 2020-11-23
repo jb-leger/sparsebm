@@ -2,7 +2,7 @@
     "type": "sbm",
     "number_of_nodes": 1000,
     "number_of_clusters": 4,
-    "symetric": true,
+    "symmetric": true,
     "connection_probabilities": [
         [
             0.1,

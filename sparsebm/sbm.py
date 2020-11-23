@@ -105,11 +105,11 @@ class SBM_bernouilli(BaseEstimator):
         self.n_clusters = n_clusters
         self.use_gpu = use_gpu
         self.gpu_index = gpu_index
-        self.symetric = False
+        self.symmetric = False
 
-    def score(self, X, y=None, symetric=False):
+    def score(self, X, y=None, symmetric=False):
         if not hasattr(self, "loglikelihood_"):
-            self.fit(X, symetric=symetric)
+            self.fit(X, symmetric=symmetric)
         return self.get_ICL()
 
     def get_params(self, deep=True):
@@ -217,7 +217,7 @@ class SBM_bernouilli(BaseEstimator):
             * np.log(self._nb_rows * (self._nb_rows - 1))
         )
 
-    def fit(self, X, y=None, symetric=False):
+    def fit(self, X, y=None, symmetric=False):
         """Perform co-clustering by direct maximization of graph modularity.
 
         Parameters
@@ -225,7 +225,7 @@ class SBM_bernouilli(BaseEstimator):
         X : scipy sparse matrix, shape=(n_nodes, n_nodes)
             Matrix to be analyzed
         """
-        self.symetric = symetric
+        self.symmetric = symmetric
         self._check_params()
         self.trained_successfully_ = False
         n, n2 = X.shape
@@ -470,7 +470,7 @@ class SBM_bernouilli(BaseEstimator):
                 * self._np.log(1 - pi)
             ).sum()
         )
-        return ll / 2 if self.symetric else ll
+        return ll / 2 if self.symmetric else ll
 
     def _init_bernouilli_SBM_random(self, n1, nq, nb_ones):
         """Randomly initialize the SBM bernouilli model and variationnal parameters.
@@ -491,7 +491,7 @@ class SBM_bernouilli(BaseEstimator):
         pi = self._np.random.uniform(
             2 * nb_ones / (n1 * n1) / 10, 2 * nb_ones / (n1 * n1), (nq, nq)
         )
-        if self.symetric:
+        if self.symmetric:
             pi = (pi @ pi.T) / 2
 
         return (alpha.flatten(), tau, pi)
@@ -523,7 +523,7 @@ class SBM_bernouilli(BaseEstimator):
             verbosity=self.verbosity,
             use_gpu=self.use_gpu,
         )
-        model.symetric = self.symetric
+        model.symmetric = self.symmetric
         model._np = self._np
         model._cupyx = self._cupyx
         model._nb_rows = self._nb_rows
@@ -559,7 +559,7 @@ if __name__ == "__main__":
         number_of_clusters,
         connection_probabilities,
         cluster_proportions,
-        symetric=True,
+        symmetric=True,
     )
 
     from sparsebm import SBM_bernouilli
@@ -580,7 +580,7 @@ if __name__ == "__main__":
         verbose=1,
     )
     print("Start grid search algorithm")
-    clf.fit(graph, symetric=True)
+    clf.fit(graph, symmetric=True)
     ari = metrics.adjusted_rand_score(
         clusters_index, clf.best_estimator_.labels
     )

@@ -127,7 +127,7 @@ def generate_bernouilli_SBM_dataset(
     number_of_clusters,
     connection_probabilities,
     cluster_proportions,
-    symetric=False,
+    symmetric=False,
 ):
     print("Start generating graph, it might take a while...")
     cluster_indicator = np.random.multinomial(
@@ -162,7 +162,7 @@ def generate_bernouilli_SBM_dataset(
                     if (i, j) not in inserted:
                         inserted.add((i, j))
                         c += 1
-    if symetric:
+    if symmetric:
         inserted = [(i, j) for (i, j) in inserted if i < j]
         inserted.extend([(j, i) for (i, j) in inserted])
     else:
