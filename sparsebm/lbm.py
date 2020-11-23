@@ -111,6 +111,14 @@ class LBM_bernouilli(BaseEstimator):
         self.gpu_index = gpu_index
 
     @property
+    def group_connection_probabilities(self):
+        """array_like: Returns the group connection probabilities"""
+        assert (
+            self.trained_successfully_ == True
+        ), "Model not trained successfully"
+        return self.pi_
+
+    @property
     def row_group_membership_probability(self):
         """array_like: Returns the row group membership probabilities"""
         assert (

@@ -171,6 +171,14 @@ class SBM_bernouilli(BaseEstimator):
                     cupy.cuda.Device(gpu_number).use()
 
     @property
+    def group_connection_probabilities(self):
+        """array_like: Returns the group connection probabilities"""
+        assert (
+            self.trained_successfully_ == True
+        ), "Model not trained successfully"
+        return self.pi_
+
+    @property
     def group_membership_probability(self):
         """array_like: Returns the group membership probabilities"""
         assert (
