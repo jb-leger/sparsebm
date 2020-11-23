@@ -41,10 +41,10 @@ class LBM_bernouilli(BaseEstimator):
     n_iter_early_stop : int, optional, default: 100
         Number of EM iterations to used to run the n_init initializations.
 
-    rtol : float, default: 1e-8
+    rtol : float, default: 1e-10
         The relative tolerance parameter (see Notes).
 
-    atol : float, default: 1e-9
+    atol : float, default: 1e-4
         The absolute tolerance parameter (see Notes).
 
     verbosity : int, optional, default: 1
@@ -66,9 +66,9 @@ class LBM_bernouilli(BaseEstimator):
         Number of the n_init best initializations that will be run until convergence.
     nb_iter_early_stop : int
         Number of EM iterations to used to run the n_init initializations.
-    rtol : float
+    rtol : float, default 1e-10
         The relative tolerance parameter (see Notes).
-    atol : float
+    atol : float, default 1e-4
         The absolute tolerance parameter (see Notes).
     verbosity : int
         Degree of verbosity. Scale from 0 (no message displayed) to 3.
@@ -76,7 +76,7 @@ class LBM_bernouilli(BaseEstimator):
     Notes
     -----
     Convergence of the EM algorithm is declared when
-    old_loglikelihood - new_loglikelihood <=
+    new_loglikelihood - old_loglikelihood <=
     (`atol` + `rtol` * abs(new_loglikelihood)). The convergence is checked
     every 10 EM steps.
     """
@@ -436,7 +436,7 @@ class LBM_bernouilli(BaseEstimator):
                 ll = self._compute_likelihood(
                     indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2
                 )
-                if (old_ll - ll) < (self.atol + self.rtol * self._np.abs(ll)):
+                if (ll - old_ll) < (self.atol + self.rtol * self._np.abs(ll)):
                     success = True
                     break
                 if self.verbosity > 2:
