@@ -206,7 +206,7 @@ class LBM_bernouilli(BaseEstimator):
             and cupy.cuda.is_available()
         ):
             if self.gpu_index != None:
-                cupy.cuda.Device(gpu_index).use()
+                cupy.cuda.Device(self.gpu_index).use()
                 self._np = cupy
                 self._cupyx = cupyx
             else:
