@@ -20,50 +20,75 @@ class ModelSelection:
 
     def __init__(
         self,
-        graph: Union[spmatrix, np.ndarray],
         model_type: str,
         use_gpu: Optional[bool] = True,
         gpu_index: Optional[int] = None,
-        symmetric: Optional[bool] = False,
         plot: Optional[bool] = True,
     ) -> None:
         """
         Parameters
         ----------
-        graph : numpy.ndarray or scipy.sparse.spmatrix, shape=(n_samples, n_features) for the LBM or (n_samples, n_samples) for the SBM
-            Matrix to be analyzed
         model_type : {'LBM', 'SBM'}
             The type of co-clustering model to use.
         use_gpu : bool, optional, default: True
             Specify if a GPU should be used.
         gpu_index : int, optional, default: None
             Specify the gpu index if needed.
-        symmetric : bool, optional, default: False
-            In case of SBM model, specify if the graph connections are symmetric.
         plot : bool, optional, default: True
             Display model exploration plot.
         """
         if not (model_type == "LBM" or model_type == "SBM"):
             raise Exception("model_type parameter must be 'SBM' or 'LBM'")
-        if model_type == "SBM" and graph.shape[0] != graph.shape[0]:
+
+        self._model_type = model_type
+        self._use_gpu = use_gpu
+        self._gpu_index = gpu_index
+        self._plot = plot
+        self._figure = plt.subplots(1) if plot else None
+        self.model_explored = None
+
+    @property
+    def selected_model(self) -> Union[LBM_bernouilli, SBM_bernouilli]:
+        """sparsebm.LBM_bernouilli or sparsebm.SBM_bernouilli: Returns the optimal model explore so far."""
+        assert self.model_explored, "Model selection not trained. Use fit()"
+        return max(
+            [m["model"] for m in self.model_explored.values()],
+            key=lambda x: x.get_ICL(),
+        )
+
+    def fit(
+        self,
+        graph: Union[spmatrix, np.ndarray],
+        symmetric: Optional[bool] = False,
+    ) -> Union[LBM_bernouilli, SBM_bernouilli]:
+        """ Perform model selection of the co-clustering.
+
+        Parameters
+        ----------
+        graph : numpy.ndarray or scipy.sparse.spmatrix, shape=(n_samples, n_features) for the LBM or (n_samples, n_samples) for the SBM
+            Matrix to be analyzed
+        symmetric : bool, optional, default: False
+            In case of SBM model, specify if the graph connections are symmetric.
+
+        Returns
+        -------
+        sparsebm.LBM_bernouilli or sparsebm.SBM_bernouilli
+            The best trained model according to the ICL.
+        """
+        if self._model_type == "SBM" and graph.shape[0] != graph.shape[0]:
             raise Exception(
                 "For SBM, graph shapes must be equals (n_samples, n_samples)."
             )
 
+        self._symmetric = symmetric
         self.graph = graph
         self._indices_ones = np.asarray(list(graph.nonzero()))
         self._row_col_degrees = (
             np.asarray(graph.sum(1)).squeeze(),
             np.asarray(graph.sum(0)).squeeze(),
         )
-        self._model_type = model_type
-        self._use_gpu = use_gpu
-        self._gpu_index = gpu_index
-        self._symmetric = symmetric
-        self._plot = plot
-        self._figure = plt.subplots(1) if plot else None
-
-        if model_type == "LBM":
+        # Instantiate and training first model.
+        if self._model_type == "LBM":
             model = LBM_bernouilli(
                 1,
                 1,
@@ -72,22 +97,22 @@ class ModelSelection:
                 n_init_total_run=1,
                 n_iter_early_stop=1,
                 verbosity=0,
-                use_gpu=use_gpu,
-                gpu_index=gpu_index,
+                use_gpu=self._use_gpu,
+                gpu_index=self._gpu_index,
             )
             model.fit(graph)
         else:
             model = SBM_bernouilli(
                 1,
-                use_gpu=use_gpu,
                 max_iter=5000,
                 n_init=1,
                 n_init_total_run=1,
                 n_iter_early_stop=1,
                 verbosity=0,
+                use_gpu=self._use_gpu,
+                gpu_index=self._gpu_index,
             )
             model.fit(graph, symmetric=symmetric)
-
         nnq = (
             model.n_row_clusters + model.n_column_clusters
             if self._model_type == "LBM"
@@ -102,22 +127,6 @@ class ModelSelection:
             }
         }
 
-    @property
-    def selected_model(self) -> Union[LBM_bernouilli, SBM_bernouilli]:
-        """sparsebm.LBM_bernouilli or sparsebm.SBM_bernouilli: Returns the optimal model explore so far."""
-        return max(
-            [m["model"] for m in self.model_explored.values()],
-            key=lambda x: x.get_ICL(),
-        )
-
-    def fit(self) -> Union[LBM_bernouilli, SBM_bernouilli]:
-        """ Perform model selection of the co-clustering.
-
-        Returns
-        -------
-        sparsebm.LBM_bernouilli or sparsebm.SBM_bernouilli
-            The best trained model according to the ICL.
-        """
         best_icl = [self.selected_model.get_ICL()]
         try:
             while not np.all(
@@ -206,7 +215,7 @@ class ModelSelection:
             model_explored[nnq] = model_flag
 
             if self._plot:
-                plot_merge_split_graph(
+                _plot_merge_split_graph(
                     self, model_explored, strategy, best_model
                 )
 
@@ -454,7 +463,7 @@ class ModelSelection:
         return (models[0][1].get_ICL(), models[0][1])
 
 
-def plot_merge_split_graph(
+def _plot_merge_split_graph(
     model_selection, model_explored, strategy, best_model_current_strategy
 ):
     # figure = plt.figure(figsize=(5, 1))
@@ -619,4 +628,3 @@ def plot_merge_split_graph(
         )
     ax.legend()
     plt.pause(0.01)
-    # plt.plot()

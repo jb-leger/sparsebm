@@ -621,22 +621,24 @@ class LBM_bernouilli(BaseEstimator):
                     atol={self.atol},
                     verbosity={self.verbosity},
                     use_gpu={self.use_gpu},
+                    gpu_index={self.gpu_index},
                 )"""
 
     def copy(self):
         """Returns a copy of the model.
         """
         model = LBM_bernouilli(
-            self.n_row_clusters,
-            self.n_column_clusters,
-            self.max_iter,
-            self.n_init,
-            self.n_init_total_run,
-            self.nb_iter_early_stop,
-            self.rtol,
-            self.atol,
-            self.verbosity,
-            self.use_gpu,
+            n_row_clusters=self.n_row_clusters,
+            n_column_clusters=self.n_column_clusters,
+            max_iter=self.max_iter,
+            n_init=self.n_init,
+            n_init_total_run=self.n_init_total_run,
+            n_iter_early_stop=self.nb_iter_early_stop,
+            rtol=self.rtol,
+            atol=self.atol,
+            verbosity=self.verbosity,
+            use_gpu=self.use_gpu,
+            gpu_index=self.gpu_index,
         )
         model._nb_rows = self._nb_rows
         model._nb_cols = self._nb_cols

@@ -65,12 +65,11 @@ column_clusters_index = column_cluster_indicator.argmax(1)
 
 # instantiate the ModelSelection class.
 lbm_model_selection = ModelSelection(
-    graph,
     model_type="LBM",  # Either 'LBM' or 'SBM', the model used to cluster the data.
     plot=True,  # display illustration of the model selection algorithm.
 )
 
-lbm_selected = lbm_model_selection.fit()
+lbm_selected = lbm_model_selection.fit(graph)
 
 if lbm_selected.trained_successfully:
     print("Model has been trained successfully.")

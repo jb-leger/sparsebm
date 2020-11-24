@@ -53,13 +53,11 @@ clusters_index = cluster_indicator.argmax(1)
 
 # instantiate the ModelSelection class.
 sbm_model_selection = ModelSelection(
-    graph,
     model_type="SBM",  # Either 'LBM' or 'SBM', the model used to cluster the data.
-    symmetric=True,  # Specifying if the generated data matrix is symmetric.
     plot=True,  # display illustration of the model selection algorithm.
 )
 
-sbm_selected = sbm_model_selection.fit()
+sbm_selected = sbm_model_selection.fit(graph, symmetric=True)
 
 if sbm_selected.trained_successfully:
     print("Model has been trained successfully.")
