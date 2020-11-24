@@ -1,3 +1,4 @@
-# docs/requirements.txt
+# doc/requirements.txt
 m2r2
 sphinx-rtd-theme
+progressbar2
