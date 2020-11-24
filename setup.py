@@ -45,7 +45,7 @@ setup(
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 3 - Beta",
         # Indicate who your project is intended for
         "Intended Audience :: Science/Research",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
@@ -81,6 +81,7 @@ setup(
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
         "progressbar2",
+        "matplotlib",
         "scipy",
         "numpy",
         "gputil",
