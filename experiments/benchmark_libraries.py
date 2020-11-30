@@ -114,10 +114,16 @@ def train_with_sparsebm(
     use_gpu=False,
 ):
     results_files_already_done = glob.glob(results_folder + "*.pkl")
-    if (
+    save_f = (
         results_folder + dataset_file.split("/")[-1].split(".")[0] + "_sp.pkl"
-        in results_files_already_done
-    ):
+    )
+    if use_gpu:
+        save_f = (
+            results_folder
+            + dataset_file.split("/")[-1].split(".")[0]
+            + "_sp_gpu.pkl"
+        )
+    if save_f in results_files_already_done:
         print("Already Done")
         return None
     model = LBM_bernouilli(
@@ -142,6 +148,7 @@ def train_with_sparsebm(
     icl = model.get_ICL()
     results = {
         "lib": "sparsebm",
+        "gpu": use_gpu,
         "n1": graph.shape[0],
         "n2": graph.shape[1],
         "nq": nb_row_clusters,
@@ -154,15 +161,7 @@ def train_with_sparsebm(
         "user": end_resources.ru_utime - start_resources.ru_utime,
     }
     print(f'SparseBM tt time {results["user"]+results["sys"]}')
-    pickle.dump(
-        results,
-        open(
-            results_folder
-            + dataset_file.split("/")[-1].split(".")[0]
-            + "_sp.pkl",
-            "wb",
-        ),
-    )
+    pickle.dump(results, open(save_f, "wb"))
     return results
 
 
