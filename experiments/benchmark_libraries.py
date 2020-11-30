@@ -98,11 +98,6 @@ dataset_files = np.array(dataset_files).flatten()
 np.random.shuffle(dataset_files)
 
 
-dataset_files = glob.glob(
-    "./experiments/data/sparsity_fixed/40000_20000_*.pkl"
-)[:1]
-
-
 results_folder = "./experiments/results/benchmark_libraries/size_growing/"
 if not os.path.exists(results_folder):
     os.makedirs(results_folder)
