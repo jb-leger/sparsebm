@@ -56,6 +56,7 @@ parser.add_argument(
     help="specify the gpu index if needed.",
     type=int,
     default=0,
+    required=False,
 )
 
 args = vars(parser.parse_args())
@@ -122,6 +123,7 @@ def train_with_sparsebm(
     row_clusters_index,
     column_clusters_index,
     use_gpu=False,
+    gpu_index=None,
 ):
     results_files_already_done = glob.glob(results_folder + "*.pkl")
     save_f = (
@@ -377,6 +379,7 @@ for dataset_file in dataset_files:
             row_clusters_index,
             column_clusters_index,
             use_gpu,
+            args["gpu_index"],
         )
     if use_bm:
         train_with_blockmodels(
