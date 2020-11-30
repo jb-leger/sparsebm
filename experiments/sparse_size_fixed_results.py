@@ -7,6 +7,8 @@ import glob
 import pickle
 import time
 import matplotlib.colors as mcolors
+from matplotlib.ticker import FormatStrFormatter
+import matplotlib.ticker as mtick
 
 dataset_files = glob.glob("./experiments/results/sparsity/*.pkl")
 
@@ -32,59 +34,6 @@ xs = np.sort(np.array(list(time_results_sparse.keys())))
 xs = xs[:7]
 
 ############################ PLOTTING bayes error and Classification error ########################
-
-fig, ax = plt.subplots(1, 1, figsize=(7, 4))
-ax.plot(
-    xs,
-    [np.median(time_results_sparse[x]) for x in xs],
-    marker="^",
-    markersize=7,
-    linewidth=0.5,
-    color=mcolors.TABLEAU_COLORS["tab:green"],
-)
-bp = ax.boxplot(
-    [time_results_sparse[x] for x in xs],
-    positions=xs,
-    showfliers=False,
-    capprops=dict(linestyle="-", linewidth=0.35, color="grey"),
-    whiskerprops=dict(linestyle="-", linewidth=0.35, color="grey"),
-    boxprops=dict(linestyle="-", linewidth=0.35, color="grey"),
-    medianprops=dict(
-        linestyle="-",
-        linewidth=0.35,
-        color=mcolors.TABLEAU_COLORS["tab:green"],
-    ),
-    widths=[0.2] * len(xs),
-)
-
-ax.plot(
-    xs,
-    [np.median(time_results_not_sparse[x]) for x in xs],
-    marker="*",
-    markersize=7,
-    linewidth=0.5,
-    color=mcolors.TABLEAU_COLORS["tab:blue"],
-)
-bp = ax.boxplot(
-    [time_results_not_sparse[x] for x in xs],
-    positions=xs,
-    showfliers=False,
-    capprops=dict(linestyle="-", linewidth=0.35, color="grey"),
-    whiskerprops=dict(linestyle="-", linewidth=0.35, color="grey"),
-    boxprops=dict(linestyle="-", linewidth=0.35, color="grey"),
-    medianprops=dict(
-        linestyle="-", linewidth=0.35, color=mcolors.TABLEAU_COLORS["tab:blue"]
-    ),
-    widths=[0.2] * len(xs),
-)
-
-ax.set_ylim(bottom=0)
-ax.set_ylabel("Execution time (sec.)", size=12)
-ax.set_xlabel("$\epsilon$", size=12)
-# ax.set_xticks([0,1,2,3,4])
-# ax.set_xticklabels(["0", "1\n0.2","2\n0.1", "3", "4"])
-
-
 def epsilon_to_rate(x):
     return (connection_probabilities).mean() / (2 ** x)
 
@@ -100,11 +49,61 @@ def rate_to_epsilon(x):
     return results
 
 
-secax = ax.secondary_xaxis("top", functions=(epsilon_to_rate, rate_to_epsilon))
-secax.set_xlabel("sparsity rate")
-secax.set_xticks(epsilon_to_rate(xs))
+fig, ax = plt.subplots(1, 1, figsize=(7, 4))
+xs_values = epsilon_to_rate(xs)
+
+ax.plot(
+    xs_values,
+    [np.median(time_results_sparse[x]) for x in xs],
+    marker="^",
+    markersize=7,
+    linewidth=0.5,
+    color=mcolors.TABLEAU_COLORS["tab:green"],
+)
+bp = ax.boxplot(
+    [time_results_sparse[x] for x in xs],
+    positions=xs_values,
+    showfliers=False,
+    capprops=dict(linestyle="-", linewidth=0.35, color="grey"),
+    whiskerprops=dict(linestyle="-", linewidth=0.35, color="grey"),
+    boxprops=dict(linestyle="-", linewidth=0.35, color="grey"),
+    medianprops=dict(
+        linestyle="-",
+        linewidth=0.35,
+        color=mcolors.TABLEAU_COLORS["tab:green"],
+    ),
+    widths=[0.005] * len(xs),
+)
+
+ax.plot(
+    xs_values,
+    [np.median(time_results_not_sparse[x]) for x in xs],
+    marker="*",
+    markersize=7,
+    linewidth=0.5,
+    color=mcolors.TABLEAU_COLORS["tab:blue"],
+)
+bp = ax.boxplot(
+    [time_results_not_sparse[x] for x in xs],
+    positions=xs_values,
+    showfliers=False,
+    capprops=dict(linestyle="-", linewidth=0.35, color="grey"),
+    whiskerprops=dict(linestyle="-", linewidth=0.35, color="grey"),
+    boxprops=dict(linestyle="-", linewidth=0.35, color="grey"),
+    medianprops=dict(
+        linestyle="-", linewidth=0.35, color=mcolors.TABLEAU_COLORS["tab:blue"]
+    ),
+    widths=[0.005] * len(xs),
+)
+
+ax.set_ylabel("Execution time (sec.)", size=12)
+
+ax.set_xlabel("sparsity rate", size=12)
+ax.set_xlim(0 + 1e-6, xs_values.max() + 0.02)
+ax.set_xticks(xs_values[:-2])
+ax.xaxis.set_major_formatter(FormatStrFormatter("%.2f"))
+secax = ax.secondary_xaxis("top", functions=(rate_to_epsilon, epsilon_to_rate))
+secax.set_xlabel("$\epsilon$")
+secax.set_xticks(rate_to_epsilon(xs_values))
+
 plt.show()
-
-
-# secax = ax.secondary_xaxis('top', functions=(forward, inverse))
-# secax.set_xlabel('period [s]')

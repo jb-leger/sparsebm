@@ -28,7 +28,7 @@ connection_probabilities = np.array(
 ###
 import pickle
 
-nbexpo = 10
+nbexpo = 7
 for exponent in range(nbexpo):
     print("exponent {}/{}".format(exponent, nbexpo))
     nbtt = 100
@@ -59,10 +59,3 @@ for exponent in range(nbexpo):
         pickle.dump(
             dataset, open("./experiments/data/sparsity/" + fname, "wb")
         )
-# p = 0.1
-# n = 100
-# a = ss.random(n,n, density=np.random.normal(p, np.sqrt(p*(1-p))/n**2), data_rvs=np.ones)
-#
-# err = []
-# for i in range(1000):
-#     err.append(0.25 - (np.random.binomial(1, np.ones((100,100))*0.25) == 1).mean())

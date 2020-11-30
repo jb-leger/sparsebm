@@ -21,6 +21,8 @@ class ModelSelection:
     def __init__(
         self,
         model_type: str,
+        *,
+        n_clusters_max: Optional[int] = 30,
         use_gpu: Optional[bool] = True,
         gpu_index: Optional[int] = None,
         plot: Optional[bool] = True,
@@ -30,6 +32,8 @@ class ModelSelection:
         ----------
         model_type : {'LBM', 'SBM'}
             The type of co-clustering model to use.
+        n_clusters_max : int, optional, default: 30
+            Upper limit of the number of classes.
         use_gpu : bool, optional, default: True
             Specify if a GPU should be used.
         gpu_index : int, optional, default: None
@@ -46,6 +50,7 @@ class ModelSelection:
         self._plot = plot
         self._figure = plt.subplots(1) if plot else None
         self.model_explored = None
+        self.n_clusters_max = n_clusters_max
 
     @property
     def selected_model(self) -> Union[LBM_bernouilli, SBM_bernouilli]:
@@ -165,7 +170,7 @@ class ModelSelection:
 
         The splitting strategy stops when the number of classes is greater
         than  min(1.5*number of classes of the best model,
-        number of classes of the best model + 10).
+        number of classes of the best model + 10, number of classes max).
         The merging strategy stops when the minimum relevant number of
         classes is reached.
 
@@ -306,7 +311,12 @@ class ModelSelection:
                     )
 
                 if strategy == "split" and (
-                    (nnq_bm) < min(1.5 * (nnq_best_model), nnq_best_model + 10)
+                    (nnq_bm)
+                    < min(
+                        1.5 * (nnq_best_model),
+                        nnq_best_model + 10,
+                        self.n_clusters_max,
+                    )
                     or nnq_bm < 4
                 ):
                     models_to_explore.append(bfm)

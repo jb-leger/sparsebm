@@ -37,7 +37,7 @@ setup(
     description="An implementation of Stochastic Bloc model and Latent Block model efficient with sparse matrices.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/gfrisch/sparsebm",
+    url="https://sparsebm.readthedocs.io",
     author="Gabriel Frisch",
     author_email="gabriel.frisch@hds.utc.fr",
     classifiers=[  # Optional

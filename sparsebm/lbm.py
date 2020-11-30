@@ -19,42 +19,8 @@ except ImportError:
 
 
 class LBM_bernouilli(BaseEstimator):
-    """LBM with bernouilli distribution.
-
-    Parameters
-    ----------
-    n_row_clusters : int
-        Number of row clusters to form
-
-    n_column_clusters : int
-        Number of row clusters to form
-
-    max_iter : int, optional, default: 10000
-        Maximum number of EM iterations
-
-    n_init : int, optional, default: 100
-        Number of initializations that will be run for n_iter_early_stop EM iterations.
-
-    n_init_total_run : int, optional, default: 10
-        Number of the n_init best initializations that will be run until convergence.
-
-    n_iter_early_stop : int, optional, default: 100
-        Number of EM iterations to used to run the n_init initializations.
-
-    rtol : float, default: 1e-10
-        The relative tolerance parameter (see Notes).
-
-    atol : float, default: 1e-4
-        The absolute tolerance parameter (see Notes).
-
-    verbosity : int, optional, default: 1
-        Degree of verbosity. Scale from 0 (no message displayed) to 3.
-
-    use_gpu : bool, optional, default: _DEFAULT_USE_GPU
-        Specify if a GPU should be used.
-
-    gpu_index : int, optional, default: None
-        Specify the gpu index if needed.
+    """
+    LBM with bernouilli distribution.
 
     Attributes
     ----------
@@ -96,6 +62,32 @@ class LBM_bernouilli(BaseEstimator):
         use_gpu=_DEFAULT_USE_GPU,
         gpu_index=None,
     ):
+        """
+        Parameters
+        ----------
+        n_row_clusters : int
+            Number of row clusters to form
+        n_column_clusters : int
+            Number of row clusters to form
+        max_iter : int, optional, default: 10000
+            Maximum number of EM iterations
+        n_init : int, optional, default: 100
+            Number of initializations that will be run for n_iter_early_stop EM iterations.
+        n_init_total_run : int, optional, default: 10
+            Number of the n_init best initializations that will be run until convergence.
+        n_iter_early_stop : int, optional, default: 100
+            Number of EM iterations to used to run the n_init initializations.
+        rtol : float, default: 1e-10
+            The relative tolerance parameter (see Notes).
+        atol : float, default: 1e-4
+            The absolute tolerance parameter (see Notes).
+        verbosity : int, optional, default: 1
+            Degree of verbosity. Scale from 0 (no message displayed) to 3.
+        use_gpu : bool, optional, default: _DEFAULT_USE_GPU
+            Specify if a GPU should be used.
+        gpu_index : int, optional, default: None
+            Specify the gpu index if needed.
+        """
         self.max_iter = max_iter
         self.n_init = n_init
         self.n_init_total_run = (
@@ -606,7 +598,7 @@ class LBM_bernouilli(BaseEstimator):
         tau_2 /= tau_2.sum(axis=1).reshape(n2, 1)
         tau_2[tau_2 < eps_2] = eps_2
         tau_2 /= tau_2.sum(axis=1).reshape(n2, 1)  # Re-Normalize.
-        pi = self._np.random.uniform(0, 2 * nb_ones / (n1 * n2), (nq, nl))
+        pi = self._np.random.uniform(0, 1e-7, (nq, nl))
         return (alpha_1.flatten(), alpha_2.flatten(), tau_1, tau_2, pi)
 
     def __repr__(self):
