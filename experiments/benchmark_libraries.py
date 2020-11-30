@@ -95,7 +95,9 @@ dataset_files = [
     for f_prefix in f_prefix_list
     if int(f_prefix.split("_")[0]) <= args["size"]
 ]
-dataset_files = np.array(dataset_files).flatten()
+
+dataset_files = [b for a in dataset_files for b in a]
+dataset_files = np.array(dataset_files)
 np.random.shuffle(dataset_files)
 
 
