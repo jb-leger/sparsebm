@@ -63,11 +63,12 @@ else:
     use_gpu = False
 
 if use_bm or use_bc:
-    rpy2.robjects.numpy2ri.activate()
     import rpy2.robjects as ro
     import rpy2.robjects as robjects
     import rpy2.robjects.numpy2ri
     from rpy2.robjects.packages import importr
+
+    rpy2.robjects.numpy2ri.activate()
 if use_bm:
     blockmodels = importr("blockmodels")
 if use_bc:
