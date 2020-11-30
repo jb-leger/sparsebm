@@ -50,6 +50,14 @@ parser.add_argument(
     type=bool,
 )
 
+parser.add_argument(
+    "-i",
+    "--gpu_index",
+    help="specify the gpu index if needed.",
+    type=int,
+    default=0,
+)
+
 args = vars(parser.parse_args())
 
 use_sp = True if "sparsebm" in args["programs"] else False
@@ -137,6 +145,7 @@ def train_with_sparsebm(
         max_iter=5000,
         verbosity=1,
         use_gpu=use_gpu,
+        gpu_index=gpu_index,
     )
     start_time, start_resources = timestamp(), resource_usage(RUSAGE_SELF)
     model.fit(graph)
