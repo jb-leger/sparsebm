@@ -8,7 +8,6 @@ os.environ["OMP_NUM_THREADS"] = str(NB_THREAD_MAX)
 from sparsebm import LBM_bernouilli
 from sparsebm.utils import CARI
 import numpy as np
-from sparsebm import LBM_bernouilli
 from resource import getrusage as resource_usage, RUSAGE_SELF
 from time import time as timestamp
 import glob
@@ -297,29 +296,45 @@ def train_with_blockcluster(
     B = graph.todense()
     nr, nc = B.shape
     Br = ro.r.matrix(B, nrow=nr, ncol=nc)
-    network = robjects.ListVector({"adjacency": Br})
     # initmethod Method to initialize model parameters. The valid values are "cemInitStep", "emInitStep" and "randomInit"
     #  nbiterationsxem : Number of EM iterations used during xem step. Default value is 50.
     # nbinitmax : Maximal number initialization to try. Default value is 100
     # nbinititerations : Number of Global iterations used in initialization step. Default value is 10.
     # initepsilon : Tolerance value used while initialization. Default value is 1e-2.
     # nbxem : Number of xem steps. Default value is 5.
+    # strategy = blockcluster.coclusterStrategy(
+    #     initmethod="randomInit",
+    #     nbinitmax=100,
+    #     nbinititerations=10,
+    #     nbiterationsXEM=5000,
+    #     initepsilon=1e-2,
+    #     stopcriteria='Likelihood',
+    # )
     strategy = blockcluster.coclusterStrategy(
         initmethod="randomInit",
         nbinitmax=100,
         nbinititerations=10,
-        # nbiterationsXEM=500,
-        # initepsilon=1e-2,
+        nbiterationsXEM=5000,
+        nbiterationsxem=10,
+        initepsilon=1e-2,
+        # epsilon_int=1e-10,
+        epsilonxem=1e-4,
+        epsilonXEM=1e-10,
+        stopcriteria="Likelihood",
+        nbtry=1,
+        nbxem=100,
     )
+
     start_time, start_resources = timestamp(), resource_usage(RUSAGE_SELF)
     results = blockcluster.cocluster(
         Br,
         "binary",
         nbcocluster=robjects.IntVector([nb_row_clusters, nb_column_clusters]),
-        nbCore=4,
+        nbCore=1,
         strategy=strategy,
     )
     end_resources, end_time = resource_usage(RUSAGE_SELF), timestamp()
+    print(end_time - start_time)
     rowclass = np.array(results.slots["rowclass"])
     colclass = np.array(results.slots["colclass"])
     icl = results.slots["ICLvalue"][0]
