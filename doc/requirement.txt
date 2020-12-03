@@ -1,4 +1,5 @@
 # doc/requirements.txt
 m2r2
+numpy
 sphinx-rtd-theme
 progressbar2
