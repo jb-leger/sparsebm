@@ -4,34 +4,56 @@ import scipy.sparse
 import progressbar
 from typing import Optional
 
+_number_of_rows_default = 10 ** 3
+_number_of_columns_default = int(_number_of_rows_default / 2)
+_nb_row_clusters_default = np.random.randint(3, 6)
+_nb_column_clusters_default = np.random.randint(3, 6)
+_connection_probabilities_default_lbm = np.random.rand(
+    _nb_row_clusters_default, _nb_column_clusters_default
+)
+c = 0.03 / _connection_probabilities_default_lbm.mean()
+_connection_probabilities_default_lbm *= c
+_row_cluster_proportions_default = (
+    np.ones(_nb_row_clusters_default) / _nb_row_clusters_default
+)
+_column_cluster_proportions_default = (
+    np.ones(_nb_column_clusters_default) / _nb_column_clusters_default
+)
+
 
 def generate_LBM_dataset(
-    number_of_rows: int,
-    number_of_columns: int,
-    nb_row_clusters: int,
-    nb_column_clusters: int,
-    connection_probabilities: np.ndarray,
-    row_cluster_proportions: np.ndarray,
-    column_cluster_proportions: np.ndarray,
+    number_of_rows: Optional[int] = _number_of_rows_default,
+    number_of_columns: Optional[int] = _number_of_columns_default,
+    nb_row_clusters: Optional[int] = _nb_row_clusters_default,
+    nb_column_clusters: Optional[int] = _nb_column_clusters_default,
+    connection_probabilities: Optional[
+        np.ndarray
+    ] = _connection_probabilities_default_lbm,
+    row_cluster_proportions: Optional[
+        np.ndarray
+    ] = _row_cluster_proportions_default,
+    column_cluster_proportions: Optional[
+        np.ndarray
+    ] = _column_cluster_proportions_default,
     verbosity: Optional[int] = 1,
 ) -> dict:
     """ Generate a sparse bipartite graph with Latent Block Models.
 
     Parameters
     ----------
-    number_of_rows : int
+    number_of_rows : int, optional, default : 1000
         The number of nodes of type (1).
-    number_of_columns : int
+    number_of_columns : int, optional, default : 500
         The number of nodes of type (2).
-    nb_row_clusters : int
+    nb_row_clusters : int, optional, default : random between 3 and 5
         The number of classes of nodes of type (1).
-    nb_column_clusters : int
+    nb_column_clusters : int, default : random between 3 and 5
         The number of classes of nodes of type (2).
-    connection_probabilities : np.ndarray
+    connection_probabilities : np.ndarray, optional, default : random such as sparsity is 0.03
         The probability of having an edge between the classes.
-    row_cluster_proportions : np.ndarray
+    row_cluster_proportions : np.ndarray, optional, default : balanced
         Proportion of the classes of nodes of type (1).
-    column_cluster_proportions : np.ndarray
+    column_cluster_proportions : np.ndarray, optional, default : balanced
         Proportion of the classes of nodes of type (2).
     verbosity : int, optional, default : 1
         Display information during the generation process.
@@ -122,11 +144,23 @@ def generate_LBM_dataset(
     return dataset
 
 
+_number_of_nodes_default = 10 ** 3
+_nb_clust_default = np.random.randint(3, 6)
+_connection_probabilities_default = np.random.rand(
+    _nb_clust_default, _nb_clust_default
+)
+c = 0.03 / _connection_probabilities_default.mean()
+_connection_probabilities_default *= c
+_cluster_proportions_default = np.ones(_nb_clust_default) / _nb_clust_default
+
+
 def generate_SBM_dataset(
-    number_of_nodes: int,
-    number_of_clusters: int,
-    connection_probabilities: np.ndarray,
-    cluster_proportions: np.ndarray,
+    number_of_nodes: Optional[int] = _number_of_nodes_default,
+    number_of_clusters: Optional[int] = _nb_clust_default,
+    connection_probabilities: Optional[
+        np.ndarray
+    ] = _connection_probabilities_default,
+    cluster_proportions: Optional[np.ndarray] = _cluster_proportions_default,
     symmetric: Optional[bool] = False,
     verbosity: Optional[int] = 1,
 ) -> dict:
@@ -134,13 +168,13 @@ def generate_SBM_dataset(
 
     Parameters
     ----------
-    number_of_nodes : int
+    number_of_nodes : int, optional, default : 1000
         The number of nodes.
-    number_of_clusters : int
+    number_of_clusters : int, optional, default : random between 3 and 5
         The number of classes of nodes.
-    connection_probabilities : np.ndarray
+    connection_probabilities : np.ndarray, optional, default : random such as sparsity is 0.03
         The probability of having an edge between the classes.
-    cluster_proportions : np.ndarray
+    cluster_proportions : np.ndarray, optional, default : balanced
         Proportion of the classes of nodes.
     symmetric : bool, optional, default : False
         Specify if the generated adjacency matrix is symmetric.
