@@ -432,7 +432,7 @@ class LBM(BaseEstimator):
                     indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2
                 )
                 break
-            if iteration % 10 == 0:
+            if iteration % 5 == 0:
                 ll = self._compute_likelihood(
                     indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2
                 )

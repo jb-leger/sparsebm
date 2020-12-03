@@ -362,7 +362,7 @@ class SBM(BaseEstimator):
             if early_stop and iteration >= early_stop:
                 ll = self._compute_likelihood(indices_ones, pi, alpha, tau)
                 break
-            if iteration % 10 == 0:
+            if iteration % 5 == 0:
                 ll = self._compute_likelihood(indices_ones, pi, alpha, tau)
                 if (ll - old_ll) < (self.atol + self.rtol * self._np.abs(ll)):
                     success = True
