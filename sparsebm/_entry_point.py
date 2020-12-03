@@ -87,9 +87,19 @@ def define_parsers():
     generate_sbm_parser = subparsers.add_parser(
         "generate", help="use sparsebm to generate a data matrix"
     )
-    generate_sbm_parser.add_argument_group("json_conf_file")
-    help_example = """A json configuration file that specify the parameters of
-    the data to generate. \n Example of json configuration file for SBM: \n{\n
+    subparsers_generate = generate_sbm_parser.add_subparsers(
+        help="model to generate data with", dest="subparsers_generate_name"
+    )
+    sbm_generation_parser = subparsers_generate.add_parser(
+        "sbm", help="use the stochastic block model to generate data"
+    )
+    lbm_generation_parser = subparsers_generate.add_parser(
+        "lbm", help="use the latent block model to generate data"
+    )
+
+    help_example_base = """A json configuration file that specify the parameters
+    of the data to generate. If no file is given a random graph is generated."""
+    help_sbm_gen = """\n Example of json configuration file for SBM: \n{\n
     "type": "sbm",\n  "number_of_nodes": 1000,\n  "number_of_clusters": 4,\n
     "symmetric": true,\n  "connection_probabilities": [\n    [\n      0.1,\n
       0.036,\n      0.012,\n      0.0614\n    ],\n    [\n      0.036,\n
@@ -97,8 +107,17 @@ def define_parsers():
           0.11,\n      0.024\n    ],\n    [\n      0.0614,\n      0,\n
           0.024,\n      0.086\n    ]\n  ],\n  "cluster_proportions": [\n    0.25
           ,\n    0.25,\n    0.25,\n    0.25\n  ]\n}"""
-    generate_sbm_parser.add_argument("JSON_FILE", help=help_example)
 
+    sbm_generation_parser.add_argument(
+        "-f",
+        "--file",
+        default=None,
+        help=help_example_base + help_sbm_gen,
+        required=False,
+    )
+    lbm_generation_parser.add_argument(
+        "-f", "--file", default=None, help=help_example_base, required=False
+    )
     for parser in [sbm_parser, lbm_parser]:
         input_grp = parser.add_argument_group("mandatory arguments")
         input_grp.add_argument(
@@ -180,14 +199,14 @@ def define_parsers():
             "--n_init_total_run",
             help="Number of the best initializations that will be run\
             until convergence.",
-            default=10,
+            default=2,
             type=int,
         )
         param_grp.add_argument(
             "-t",
             "--tol",
             help="Tolerance of likelihood to declare convergence.",
-            default=1e-8,
+            default=1e-4,
             type=float,
         )
         param_grp.add_argument(
@@ -279,7 +298,7 @@ def process_sbm(args):
         n_iter_early_stop=args["n_iter_early_stop"],
         n_init_total_run=args["n_init_total_run"],
         verbosity=args["verbosity"],
-        tol=args["tol"],
+        atol=args["tol"],
         use_gpu=args["use_gpu"],
         gpu_index=args["gpu_index"],
     )
@@ -327,7 +346,7 @@ def process_lbm(args):
         n_iter_early_stop=args["n_iter_early_stop"],
         n_init_total_run=args["n_init_total_run"],
         verbosity=args["verbosity"],
-        tol=args["tol"],
+        atol=args["tol"],
         use_gpu=args["use_gpu"],
         gpu_index=args["gpu_index"],
     )
@@ -373,117 +392,150 @@ def process_lbm(args):
     print("Results saved in {}".format(args["output"]))
 
 
-def generate(args):
-    with open(args["JSON_FILE"]) as f:
-        conf = json.load(f)
-    if "type" not in conf or conf["type"] not in ["sbm", "lbm"]:
-        print("'type' must be in configuration file and be either lbm or sbm")
-
-    if conf["type"] == "sbm":
-        if (
-            "number_of_nodes" not in conf
-            or "number_of_clusters" not in conf
-            or "connection_probabilities" not in conf
-            or "cluster_proportions" not in conf
-            or "symmetric" not in conf
-        ):
-            raise Exception(
-                "Field 'number_of_nodes', 'number_of_clusters', \
-                'connection_probabilities', 'cluster_proportions', \
-                'symmetric' must be in configuration file."
-            )
-        number_of_nodes = conf["number_of_nodes"]
-        number_of_clusters = conf["number_of_clusters"]
-        connection_probabilities = np.array(conf["connection_probabilities"])
-        cluster_proportions = np.array(conf["cluster_proportions"])
-        symmetric = conf["symmetric"]
-        dataset = generate_SBM_dataset(
-            number_of_nodes,
-            number_of_clusters,
-            connection_probabilities,
-            cluster_proportions,
-            symmetric=symmetric,
-        )
-        graph = dataset["data"]
-        graph = np.stack((graph.row, graph.col), 1)
-        cluster_indicator = dataset["cluster_indicator"]
-        labels = cluster_indicator.argmax(1)
-        groups = [
-            np.argwhere(labels == q).flatten().tolist()
-            for q in range(number_of_clusters)
-        ]
-        results = {
-            "node_ids_grouped": groups,
-            "number_of_nodes": number_of_nodes,
-            "number_of_clusters": number_of_clusters,
-            "connection_probabilities": connection_probabilities.flatten().tolist(),
-            "cluster_proportions": cluster_proportions.tolist(),
-        }
+def generate_sbm(args):
+    if "JSON_FILE" in args:
+        with open(args["JSON_FILE"]) as f:
+            conf = json.load(f)
     else:
-        if (
-            "number_of_rows" not in conf
-            or "number_of_columns" not in conf
-            or "nb_row_clusters" not in conf
-            or "nb_column_clusters" not in conf
-            or "connection_probabilities" not in conf
-            or "row_cluster_proportions" not in conf
-            or "column_cluster_proportions" not in conf
-        ):
-            raise Exception(
-                "Field 'number_of_rows', 'number_of_columns', 'nb_row_clusters', \
-                'nb_column_clusters', 'connection_probabilities', \
-                'row_cluster_proportions', 'column_cluster_proportions' \
-                must be in configuration file."
-            )
-        number_of_rows = conf["number_of_rows"]
-        number_of_columns = conf["number_of_columns"]
-        nb_row_clusters = conf["nb_row_clusters"]
-        nb_column_clusters = conf["nb_column_clusters"]
-        connection_probabilities = np.array(conf["connection_probabilities"])
-        row_cluster_proportions = np.array(conf["row_cluster_proportions"])
-        column_cluster_proportions = np.array(
-            conf["column_cluster_proportions"]
-        )
-        dataset = generate_LBM_dataset(
-            number_of_rows,
-            number_of_columns,
-            nb_row_clusters,
-            nb_column_clusters,
-            connection_probabilities,
-            row_cluster_proportions,
-            column_cluster_proportions,
-        )
-        graph = dataset["data"]
-        graph = np.stack((graph.row, graph.col), 1)
-        row_cluster_indicator = dataset["row_cluster_indicator"]
-        column_cluster_indicator = dataset["column_cluster_indicator"]
-        row_labels = row_cluster_indicator.argmax(1)
-        col_labels = column_cluster_indicator.argmax(1)
-        row_groups = [
-            np.argwhere(row_labels == q).flatten().tolist()
-            for q in range(nb_row_clusters)
-        ]
-        col_groups = [
-            np.argwhere(col_labels == q).flatten().tolist()
-            for q in range(nb_column_clusters)
-        ]
-        results = {
-            "row_ids_grouped": row_groups.tolist(),
-            "column_ids_grouped": col_groups.tolist(),
-            "number_of_rows": number_of_rows,
-            "number_of_columns": number_of_columns,
-            "nb_row_clusters": nb_row_clusters,
-            "nb_column_clusters": nb_column_clusters,
-            "connection_probabilities": connection_probabilities.flatten().tolist(),
-            "row_cluster_proportions": row_cluster_proportions.tolist(),
-            "column_cluster_proportions": column_cluster_proportions.tolist(),
-        }
+        conf = {}
+
+    number_of_nodes = (
+        conf["number_of_nodes"] if "number_of_nodes" in conf else None
+    )
+    number_of_clusters = (
+        conf["number_of_clusters"] if "number_of_clusters" in conf else None
+    )
+    connection_probabilities = (
+        np.array(conf["connection_probabilities"])
+        if "connection_probabilities" in conf
+        else None
+    )
+    cluster_proportions = (
+        np.array(conf["cluster_proportions"])
+        if "cluster_proportions" in conf
+        else None
+    )
+    symmetric = conf["symmetric"] if "symmetric" in conf else False
+    dataset = generate_SBM_dataset(
+        number_of_nodes,
+        number_of_clusters,
+        connection_probabilities,
+        cluster_proportions,
+        symmetric=symmetric,
+    )
+    graph = dataset["data"]
+    graph = np.stack((graph.row, graph.col), 1)
+    cluster_indicator = dataset["cluster_indicator"]
+    labels = cluster_indicator.argmax(1)
+    number_of_clusters = cluster_indicator.shape[1]
+    groups = [
+        np.argwhere(labels == q).flatten().tolist()
+        for q in range(number_of_clusters)
+    ]
+    results = {
+        "node_ids_grouped": groups,
+        "number_of_nodes": number_of_nodes,
+        "number_of_clusters": number_of_clusters,
+        "connection_probabilities": connection_probabilities.flatten().tolist()
+        if connection_probabilities
+        else None,
+        "cluster_proportions": cluster_proportions.tolist()
+        if cluster_proportions
+        else None,
+    }
 
     file_groups = "./groups.json"
     file_edges = "./edges.csv"
     with open(file_groups, "w") as outfile:
         json.dump(results, outfile)
-    print("Groups and params saved in {}".format(file_groups))
+    print("\n Groups and params saved in {}".format(file_groups))
+    np.savetxt(file_edges, graph, delimiter=",")
+    print("Edges saved in {}".format(file_edges))
+
+
+def generate_lbm(args):
+    if "JSON_FILE" in args:
+        with open(args["JSON_FILE"]) as f:
+            conf = json.load(f)
+    else:
+        conf = {}
+
+    number_of_rows = (
+        conf["number_of_rows"] if "number_of_rows" in conf else None
+    )
+    number_of_columns = (
+        conf["number_of_columns"] if "number_of_columns" in conf else None
+    )
+    nb_row_clusters = (
+        conf["nb_row_clusters"] if "nb_row_clusters" in conf else None
+    )
+    nb_column_clusters = (
+        conf["nb_column_clusters"] if "nb_column_clusters" in conf else None
+    )
+    connection_probabilities = (
+        np.array(conf["connection_probabilities"])
+        if "connection_probabilities" in conf
+        else None
+    )
+    row_cluster_proportions = (
+        np.array(conf["row_cluster_proportions"])
+        if "row_cluster_proportions" in conf
+        else None
+    )
+    column_cluster_proportions = (
+        np.array(conf["column_cluster_proportions"])
+        if "column_cluster_proportions" in conf
+        else None
+    )
+    dataset = generate_LBM_dataset(
+        number_of_rows,
+        number_of_columns,
+        nb_row_clusters,
+        nb_column_clusters,
+        connection_probabilities,
+        row_cluster_proportions,
+        column_cluster_proportions,
+    )
+    graph = dataset["data"]
+    number_of_rows, number_of_columns = graph.shape
+    graph = np.stack((graph.row, graph.col), 1)
+    row_cluster_indicator = dataset["row_cluster_indicator"]
+    column_cluster_indicator = dataset["column_cluster_indicator"]
+    row_labels = row_cluster_indicator.argmax(1)
+    col_labels = column_cluster_indicator.argmax(1)
+    nb_row_clusters = row_cluster_indicator.shape[1]
+    nb_column_clusters = column_cluster_indicator.shape[1]
+    row_groups = [
+        np.argwhere(row_labels == q).flatten().tolist()
+        for q in range(nb_row_clusters)
+    ]
+    col_groups = [
+        np.argwhere(col_labels == q).flatten().tolist()
+        for q in range(nb_column_clusters)
+    ]
+    results = {
+        "row_ids_grouped": row_groups,
+        "column_ids_grouped": col_groups,
+        "number_of_rows": number_of_rows,
+        "number_of_columns": number_of_columns,
+        "nb_row_clusters": nb_row_clusters,
+        "nb_column_clusters": nb_column_clusters,
+        "connection_probabilities": connection_probabilities.flatten().tolist()
+        if connection_probabilities
+        else None,
+        "row_cluster_proportions": row_cluster_proportions.tolist()
+        if row_cluster_proportions
+        else None,
+        "column_cluster_proportions": column_cluster_proportions.tolist()
+        if column_cluster_proportions
+        else None,
+    }
+
+    file_groups = "./groups.json"
+    file_edges = "./edges.csv"
+    with open(file_groups, "w") as outfile:
+        json.dump(results, outfile)
+    print("\nGroups and params saved in {}".format(file_groups))
     np.savetxt(file_edges, graph, delimiter=",")
     print("Edges saved in {}".format(file_edges))
 
@@ -491,19 +543,18 @@ def generate(args):
 def process_model_selection(args):
     if args["type"].upper() not in ["SBM", "LBM"]:
         raise Exception("Invalid type argument. Must be 'SBM' or 'LBM'")
+
     graph, row_from_to, col_from_to = graph_from_csv(
-        args["ADJACENCY_MATRIX"], args["subparser_name"], sep=args["sep"]
+        args["ADJACENCY_MATRIX"], args["type"].lower(), sep=args["sep"]
     )
 
     model_selection = ModelSelection(
-        graph,
         model_type=args["type"].upper(),
         use_gpu=args["use_gpu"],
         gpu_index=args["gpu_index"],
-        symmetric=args["symmetric"],
         plot=args["plot"],
     )
-    model = model_selection.fit()
+    model = model_selection.fit(graph, symmetric=args["symmetric"])
 
     if not model.trained_successfully:
         print("FAILED, model has not been trained successfully.")
@@ -583,6 +634,7 @@ def process_model_selection(args):
 def main():
     parsers = define_parsers()
     args = vars(parsers.parse_args())
+
     if args["subparser_name"] == "sbm":
         process_sbm(args)
     elif args["subparser_name"] == "lbm":
@@ -590,4 +642,21 @@ def main():
     elif args["subparser_name"] == "modelselection":
         process_model_selection(args)
     elif args["subparser_name"] == "generate":
-        generate(args)
+        if (
+            args["subparsers_generate_name"]
+            and args["subparsers_generate_name"].upper() == "SBM"
+        ):
+            generate_sbm(args)
+        elif (
+            args["subparsers_generate_name"]
+            and args["subparsers_generate_name"].upper() == "LBM"
+        ):
+            generate_lbm(args)
+        else:
+            raise Exception(
+                "Specify positional argument 'sbm' or 'lbm' to generate data"
+            )
+
+
+if __name__ == "__main__":
+    main()
