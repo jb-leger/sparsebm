@@ -1,5 +1,7 @@
 # doc/requirements.txt
 m2r2
 numpy
+scipy
+gputil
 sphinx-rtd-theme
 progressbar2
