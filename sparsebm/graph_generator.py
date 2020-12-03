@@ -123,56 +123,122 @@ def generate_LBM_dataset(
 
 
 def generate_SBM_dataset(
-    number_of_nodes,
-    number_of_clusters,
-    connection_probabilities,
-    cluster_proportions,
-    symmetric=False,
-):
-    print("Start generating graph, it might take a while...")
-    cluster_indicator = np.random.multinomial(
-        1, cluster_proportions.flatten(), size=number_of_nodes
-    )
-    classes = [
-        cluster_indicator[:, q].nonzero()[0] for q in range(number_of_clusters)
-    ]
+    number_of_nodes: int,
+    number_of_clusters: int,
+    connection_probabilities: np.ndarray,
+    cluster_proportions: np.ndarray,
+    symmetric: Optional[bool] = False,
+    verbosity: Optional[int] = 1,
+) -> dict:
+    """ Generate a sparse graph with Stochastic Block Models.
 
-    inserted = set()
-    for q in range(number_of_clusters):
-        for l in range(number_of_clusters):
+    Parameters
+    ----------
+    number_of_nodes : int
+        The number of nodes.
+    number_of_clusters : int
+        The number of classes of nodes.
+    connection_probabilities : np.ndarray
+        The probability of having an edge between the classes.
+    cluster_proportions : np.ndarray
+        Proportion of the classes of nodes.
+    symmetric : bool, optional, default : False
+        Specify if the generated adjacency matrix is symmetric.
+    verbosity : int, optional, default : 1
+        Display information during the generation process.
+    Returns
+    -------
+    dataset: dict
+        The generated dataset. Keys contain 'data', the scipy.sparse.coo
+        adjacency matrix; 'cluster_indicator' the np.ndarray of class
+        membership of nodes.
+    """
+    try:
+        if verbosity > 0:
+            print("---------- START Graph Generation ---------- ")
+            bar = progressbar.ProgressBar(
+                max_value=number_of_clusters ** 2,
+                widgets=[
+                    progressbar.SimpleProgress(),
+                    " Generating block: ",
+                    " [",
+                    progressbar.Percentage(),
+                    " ] ",
+                    progressbar.Bar(),
+                    " [ ",
+                    progressbar.Timer(),
+                    " ] ",
+                ],
+                redirect_stdout=True,
+            ).start()
+        cluster_indicator = np.random.multinomial(
+            1, cluster_proportions.flatten(), size=number_of_nodes
+        )
+        classes = [
+            cluster_indicator[:, q].nonzero()[0]
+            for q in range(number_of_clusters)
+        ]
+
+        rows = np.array([])
+        cols = np.array([])
+        for i, (q, l) in enumerate(
+            [
+                (i, j)
+                for i in range(number_of_clusters)
+                for j in range(number_of_clusters)
+            ]
+        ):
+            if verbosity > 0:
+                bar.update(i)
+            n1, n2 = classes[q].size, classes[l].size
+
             if connection_probabilities[q, l] >= 0.25:
-                # rejection algo not effecient
-                for i in classes[q]:
+                for id in classes[q]:
                     nb_ones = np.random.binomial(
                         classes[l].size, connection_probabilities[q, l]
                     )
-                    trucs = np.random.choice(
-                        classes[l], nb_ones, replace=False
-                    )
-                    inserted.update((i, j) for j in trucs)
+                    col = np.random.choice(classes[l], nb_ones, replace=False)
+                    row = np.ones_like(col) * id
+                    row_col_unique = np.unique(np.stack((row, col), 1), axis=0)
+                    np.random.shuffle(row_col_unique)
+                    rows = np.concatenate((rows, row_col_unique[:, 0]))
+                    cols = np.concatenate((cols, row_col_unique[:, 1]))
             else:
-                nb_ones = np.random.binomial(
-                    classes[q].size * classes[l].size,
-                    connection_probabilities[q, l],
+                nnz = np.random.binomial(
+                    n1 * n2, connection_probabilities[q, l]
                 )
-                c = 0
-                while c < nb_ones:
-                    i = np.random.choice(classes[q])
-                    j = np.random.choice(classes[l])
-                    if (i, j) not in inserted:
-                        inserted.add((i, j))
-                        c += 1
-    if symmetric:
-        inserted = [(i, j) for (i, j) in inserted if i < j]
-        inserted.extend([(j, i) for (i, j) in inserted])
-    else:
-        inserted = [(i, j) for (i, j) in inserted if i != j]
-    X = sp.sparse.coo_matrix(
-        (
-            np.ones(len(inserted)),
-            ([i for i, j in inserted], [j for i, j in inserted]),
-        ),
-        (number_of_nodes, number_of_nodes),
-    )
+                if nnz > 0:
+                    row = np.random.choice(classes[q], size=2 * nnz)
+                    col = np.random.choice(classes[l], size=2 * nnz)
+                    row_col_unique = np.unique(np.stack((row, col), 1), axis=0)
+                    while row_col_unique.shape[0] < nnz:
+                        row = np.random.choice(classes[q], size=2 * nnz)
+                        col = np.random.choice(classes[l], size=2 * nnz)
+                        row_col_unique = np.unique(
+                            np.stack((row, col), 1), axis=0
+                        )
+                    np.random.shuffle(row_col_unique)
+                    rows = np.concatenate((rows, row_col_unique[:nnz, 0]))
+                    cols = np.concatenate((cols, row_col_unique[:nnz, 1]))
 
-    return {"data": X, "cluster_indicator": cluster_indicator}
+        inserted = np.stack((rows, cols), axis=1)
+        if symmetric:
+            inserted = inserted[inserted[:, 0] < inserted[:, 1]]
+            inserted = np.concatenate((inserted, inserted[:, [1, 0]]))
+        else:
+            inserted = inserted[inserted[:, 0] != inserted[:, 1]]
+
+        graph = scipy.sparse.coo_matrix(
+            (np.ones(inserted[:, 0].size), (inserted[:, 0], inserted[:, 1])),
+            shape=(number_of_nodes, number_of_nodes),
+        )
+        if verbosity > 0:
+            bar.finish()
+
+    except KeyboardInterrupt:
+        return None
+    finally:
+        if verbosity > 0:
+            bar.finish()
+
+    return {"data": graph, "cluster_indicator": cluster_indicator}

@@ -19,9 +19,11 @@ def test_generate_sbm():
         ]
     )
 
-    data = generate_SBM_dataset(n, nq, pi_sim, alpha, symmetric=True)
+    data = generate_SBM_dataset(
+        n, nq, pi_sim, alpha, symmetric=True, verbosity=False
+    )
     X, Y1, = (data["data"], data["cluster_indicator"])
-    assert np.abs(pi_sim.mean() - X.nnz / np.prod(X.shape)) < 10 ** -4
+    assert np.abs(pi_sim.mean() - X.nnz / np.prod(X.shape)) < 10 ** -3
     assert X.shape == (n, n)
     assert np.all(Y1[0] == np.array([0, 1, 0, 0]))
     assert Y1.shape == (n, nq)
