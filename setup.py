@@ -37,7 +37,7 @@ setup(
     description="An implementation of Stochastic Bloc model and Latent Block model efficient with sparse matrices.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/gfrisch/sparsebm",
+    url="https://sparsebm.readthedocs.io",
     author="Gabriel Frisch",
     author_email="gabriel.frisch@hds.utc.fr",
     classifiers=[  # Optional
@@ -45,7 +45,7 @@ setup(
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 3 - Beta",
         # Indicate who your project is intended for
         "Intended Audience :: Science/Research",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
@@ -79,7 +79,14 @@ setup(
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=["progressbar2", "scipy", "numpy"],  # Optional
+    install_requires=[
+        "progressbar2",
+        "matplotlib",
+        "scipy",
+        "numpy",
+        "gputil",
+        "scikit-learn",
+    ],  # Optional
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
     # syntax, for example:
@@ -88,7 +95,11 @@ setup(
     #
     # Similar to `install_requires` above, these must be valid existing
     # projects.
-    extras_require={"gpu": ["cupy"], "test": ["pytest"]},  # Optional
+    extras_require={
+        "gpu": ["cupy"],
+        "test": ["pytest"],
+        "experiments": ["rpy2"],
+    },  # Optional
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # `pip` to create the appropriate form of executable for the target
@@ -97,6 +108,9 @@ setup(
     # For example, the following would provide a command called `sample` which
     # executes the function `main` from this package when invoked:
     # entry_points={"console_scripts": ["sample=sample:main"]},  # Optional
+    entry_points={
+        "console_scripts": ["sparsebm = sparsebm._entry_point:main"]
+    },
     # List additional URLs that are relevant to your project as a dict.
     #
     # This field corresponds to the "Project-URL" metadata fields:

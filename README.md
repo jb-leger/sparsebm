@@ -1,4 +1,4 @@
-# sparsebm: a python implementation for the Latent Bloc Model (LBM) and Stochastic Bloc Model (SBM) for an efficient analysis of large graphs.
+# SparseBM: a python module for handling sparse graphs with Block Models
 
 ## Installing
 
@@ -20,92 +20,81 @@ pip3 install sparsebm
 pip3 install cupy
 ```
 
-## Example
+## Example with Stochastic Block Model
 ### Generate SBM Synthetic graph
 - Generate a synthetic graph to analyse with SBM:
+
 ```python
-import numpy as np
-from sparsebm import generate_bernouilli_SBM
-#
-# Define the properties of your graph
-#
-number_of_nodes = 10 ** 3
-number_of_clusters = 4
-cluster_proportions = np.ones(number_of_clusters) / number_of_clusters
-connection_probabilities = np.array([[0.05, 0.018, 0.006, 0.0307], [0.018, 0.037, 0, 0], [0.006, 0, 0.055, 0.012], [0.0307, 0, 0.012, 0.043]])
-#
-# The graph is generated
-#
-data = generate_bernouilli_SBM(number_of_nodes, number_of_clusters, connection_probabilities, cluster_proportions, symetric=True)
-graph, cluster_indicator, = (data["X"], data["Y"])
+from sparsebm import generate_SBM_dataset
+
+dataset = generate_SBM_dataset(symmetric=True)
+graph = dataset["data"]
+cluster_indicator = dataset["cluster_indicator"]
 ```
 
-### Infere with sparsebm SBM_bernouilli:
- - Use the bernouilli Stochastic Bloc Model:
+### Infere with sparsebm SBM:
+ - Use the bernoulli Stochastic Bloc Model:
 ```python
-    from sparsebm import SBM_bernouilli
+    from sparsebm import SBM
 
-    model = SBM_bernouilli(
-        number_of_clusters,
-        gpu_number=None, # Or give the desired GPU index.
-        symetric=True,
-    )
+    number_of_clusters = cluster_indicator.shape[1]
 
-    model.fit(graph)
-
-    print("Labels:")
-    print(model.labels)
+    # A number of classes must be specify. Otherwise see model selection.
+    model = SBM(number_of_clusters)
+    model.fit(graph, symmetric=True)
+    print("Labels:", model.labels)
 ```
+
+### Compute performances:
+```python
+    from sparsebm.utils import ARI
+    ari = ARI(cluster_indicator.argmax(1), model.labels)
+    print("Adjusted Rand index is {:.2f}".format(ari))
+```
+
 To use GPU acceleration, CUPY needs to be installed and replace gpu_number to the desired GPU index.
 
-
+## Example with Latent Block Model
 
 ### Generate LBM Synthetic graph
 - Generate a synthetic graph to analyse with LBM:
-``` python
-    from sparsebm import generate_bernouilli_LBM
-    import numpy as np
-    #
-    # Define the properties of your graph
-    #
-    number_of_rows = 10 ** 3
-    number_of_columns = 2* number_of_rows
-    nb_row_clusters, nb_column_clusters = 3, 4
-    row_cluster_proportions = np.ones(nb_row_clusters) / nb_row_clusters
-    column_cluster_proportions = np.ones(nb_column_clusters) / nb_column_clusters
-    connection_probabilities = np.array([[0.1, 0.0125, 0.0125, 0.05], [0.0125, 0.1, 0.0125, 0.05], [0, 0.0125, 0.1, 0]])
-    #
-    # The graph is generated
-    #
-    data = generate_bernouilli_LBM(
-            number_of_rows,
-            number_of_columns,
-            nb_row_clusters,
-            nb_column_clusters,
-            connection_probabilities,
-            row_cluster_proportions,
-            column_cluster_proportions
-        )
-    graph, row_cluster_indicator, column_cluster_indicator, = (data["X"], data["Y1"], data["Y2"])
+
+```python
+from sparsebm import generate_LBM_dataset
+
+dataset = generate_LBM_dataset()
+graph = dataset["data"]
+row_cluster_indicator = dataset["row_cluster_indicator"]
+column_cluster_indicator = dataset["column_cluster_indicator"]
 ```
 
-### Infere with sparsebm LBM_bernouilli:
- - Use the bernouilli Latent Bloc Model:
+### Infere with sparsebm LBM:
+ - Use the bernoulli Latent Bloc Model:
+```python
+    from sparsebm import LBM
 
-``` python
-    from sparsebm import LBM_bernouilli
+    number_of_row_clusters = row_cluster_indicator.shape[1]
+    number_of_columns_clusters = column_cluster_indicator.shape[1]
 
-    model = LBM_bernouilli(
-        nb_row_clusters,
-        nb_column_clusters,
-        gpu_number=None, # Or give the desired GPU index.
+    # A number of classes must be specify. Otherwise see model selection.
+    model = LBM(
+        number_of_row_clusters,
+        number_of_columns_clusters,
+        n_init_total_run=1,
     )
     model.fit(graph)
-
-    print("Row labels:")
-    print(model.row_labels)
-
-    print("Column labels:")
-    print(model.column_labels)
+    print("Row Labels:", model.row_labels)
+    print("Column Labels:", model.column_labels)
 ```
-To use GPU acceleration, CUPY needs to be installed and set gpu_number the desired GPU index.
+
+### Compute performances:
+```python
+    from sparsebm.utils import CARI
+    cari = CARI(
+        row_cluster_indicator.argmax(1),
+        column_cluster_indicator.argmax(1),
+        model.row_labels,
+        model.column_labels,
+    )
+    print("Co-Adjusted Rand index is {:.2f}".format(cari))
+```

@@ -1,9 +1,8 @@
-from .. import SBM_bernouilli, generate_bernouilli_SBM
+from .. import SBM, generate_SBM_dataset
 
 import numpy as np
 import time
 import itertools
-from scipy import optimize
 
 
 def test_sbm():
@@ -12,35 +11,34 @@ def test_sbm():
     nq = 4
     alpha = np.ones(nq) / nq
     degree_wanted = 20
-    pi_sim = np.array([[8, 3, 1, 5], [3, 6, 0, 0], [1, 0, 9, 2], [5, 0, 2, 7]])
-
-    def f(x, n, pi, degree_wanted):
-        return np.abs((pi / (x * n)).mean() * n - degree_wanted)
-
-    res = optimize.minimize_scalar(lambda x: f(x, n, pi_sim, degree_wanted))
-    pi_sim = pi_sim / (res.x * n)
-    degree_moyen = pi_sim.mean() * n
-
-    data = generate_bernouilli_SBM(n, nq, pi_sim, alpha, symetric=True)
-    X, Y1, = (data["X"], data["Y"])
-
-    model = SBM_bernouilli(
-        nq,
-        max_iter=10000,
-        n_init=25,
-        n_init_total_run=10,
-        n_iter_early_stop=100,
-        tol=1e-5,
-        verbosity=0,
-        gpu_number=None,
-        symetric=True,
+    pi_sim = np.array(
+        [
+            [0.04923077, 0.01846154, 0.00615385, 0.03076923],
+            [0.01846154, 0.03692308, 0.0, 0.0],
+            [0.00615385, 0.0, 0.05538462, 0.01230769],
+            [0.03076923, 0.0, 0.01230769, 0.04307692],
+        ]
     )
-    model.fit(X)
 
-    pi = model._pi
+    data = generate_SBM_dataset(n, nq, pi_sim, alpha, symmetric=True)
+    X, Y1, = (data["data"], data["cluster_indicator"])
+
+    model = SBM(
+        nq,
+        max_iter=10,
+        n_init=1,
+        n_init_total_run=1,
+        n_iter_early_stop=1,
+        atol=1e-5,
+        verbosity=0,
+        use_gpu=False,
+    )
+    model.fit(X, symmetric=True)
+
+    pi = model.pi_
     bp = max(
         itertools.permutations(range(nq)),
-        key=lambda permut: (model._tau[:, permut] * Y1).sum(),
+        key=lambda permut: (model.tau_[:, permut] * Y1).sum(),
     )
 
-    assert np.max(np.abs(pi[:, bp][bp, :] - pi_sim)) < 0.002
+    assert np.max(np.abs(pi[:, bp][bp, :] - pi_sim)) < 0.04

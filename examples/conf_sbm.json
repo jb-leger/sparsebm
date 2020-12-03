@@ -1,0 +1,38 @@
+{
+    "type": "sbm",
+    "number_of_nodes": 1000,
+    "number_of_clusters": 4,
+    "symmetric": true,
+    "connection_probabilities": [
+        [
+            0.1,
+            0.036,
+            0.012,
+            0.0614
+        ],
+        [
+            0.036,
+            0.074,
+            0,
+            0
+        ],
+        [
+            0.012,
+            0,
+            0.11,
+            0.024
+        ],
+        [
+            0.0614,
+            0,
+            0.024,
+            0.086
+        ]
+    ],
+    "cluster_proportions": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+    ]
+}

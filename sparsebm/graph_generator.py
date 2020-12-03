@@ -1,85 +1,301 @@
 import numpy as np
 import scipy as sp
 import scipy.sparse
+import progressbar
+from typing import Optional
 
 
-def generate_bernouilli_SBM(n, nq, pi, alpha, symetric=False):
-    print("Start generating graph, it might take a while...")
-    Y = np.random.multinomial(1, alpha.flatten(), size=n)
-    classes = [Y[:, q].nonzero()[0] for q in range(nq)]
+def generate_LBM_dataset(
+    number_of_rows: Optional[int] = None,
+    number_of_columns: Optional[int] = None,
+    nb_row_clusters: Optional[int] = None,
+    nb_column_clusters: Optional[int] = None,
+    connection_probabilities: Optional[np.ndarray] = None,
+    row_cluster_proportions: Optional[np.ndarray] = None,
+    column_cluster_proportions: Optional[np.ndarray] = None,
+    verbosity: Optional[int] = 1,
+) -> dict:
+    """ Generate a sparse bipartite graph with Latent Block Models.
 
-    inserted = set()
-    for q in range(nq):
-        for l in range(nq):
-            if pi[q, l] >= 0.25:
-                # rejection algo not effecient
-                for i in classes[q]:
-                    nb_ones = np.random.binomial(classes[l].size, pi[q, l])
-                    trucs = np.random.choice(classes[l], nb_ones, replace=False)
-                    inserted.update((i, j) for j in trucs)
-            else:
-                nb_ones = np.random.binomial(
-                    classes[q].size * classes[l].size, pi[q, l]
-                )
-                c = 0
-                while c < nb_ones:
-                    i = np.random.choice(classes[q])
-                    j = np.random.choice(classes[l])
-                    if (i, j) not in inserted:
-                        inserted.add((i, j))
-                        c += 1
-    if symetric:
-        inserted = [(i, j) for (i, j) in inserted if i < j]
-        inserted.extend([(j, i) for (i, j) in inserted])
-    else:
-        inserted = [(i, j) for (i, j) in inserted if i != j]
-    X = sp.sparse.coo_matrix(
-        (np.ones(len(inserted)), ([i for i, j in inserted], [j for i, j in inserted])),
-        (n, n),
+    Parameters
+    ----------
+    number_of_rows : int, optional, default : 2000
+        The number of nodes of type (1).
+    number_of_columns : int, optional, default : 1000
+        The number of nodes of type (2).
+    nb_row_clusters : int, optional, default : random between 3 and 5
+        The number of classes of nodes of type (1).
+    nb_column_clusters : int, default : random between 3 and 5
+        The number of classes of nodes of type (2).
+    connection_probabilities : np.ndarray, optional, default : random such as sparsity is 0.02
+        The probability of having an edge between the classes.
+    row_cluster_proportions : np.ndarray, optional, default : balanced
+        Proportion of the classes of nodes of type (1).
+    column_cluster_proportions : np.ndarray, optional, default : balanced
+        Proportion of the classes of nodes of type (2).
+    verbosity : int, optional, default : 1
+        Display information during the generation process.
+    Returns
+    -------
+    dataset: dict
+        The generated dataset. Keys contain 'data', the scipy.sparse.coo
+        adjacency matrix; 'row_cluster_indicator' and 'column_cluster_indicator'
+        the np.ndarray of class membership of nodes.
+    """
+    number_of_rows = number_of_rows if number_of_rows else 2 * 10 ** 3
+    number_of_columns = number_of_columns if number_of_columns else 10 ** 3
+    nb_row_clusters = (
+        nb_row_clusters if nb_row_clusters else np.random.randint(3, 6)
     )
-
-    return {"X": X, "Y": Y, "alpha": alpha, "pi": pi}
-
-
-def generate_bernouilli_LBM(n1, n2, nq, nl, pi, alpha_1, alpha_2):
-    print("Start generating graph, it might take a while...")
-    Y1 = np.random.multinomial(1, alpha_1.flatten(), size=n1)
-    Y2 = np.random.multinomial(1, alpha_2.flatten(), size=n2)
-    row_classes = [Y1[:, q].nonzero()[0] for q in range(nq)]
-    col_classes = [Y2[:, l].nonzero()[0] for l in range(nl)]
-
-    inserted = set()
-    for q in range(nq):
-        print(q)
-        for l in range(nl):
-            if pi[q, l] >= 0.25:
-                # rejection algo not effecient
-                for i in row_classes[q]:
-                    nb_ones = np.random.binomial(col_classes[l].size, pi[q, l])
-                    trucs = np.random.choice(col_classes[l], nb_ones, replace=False)
-                    inserted.update((i, j) for j in trucs)
-            else:
-                nb_ones = np.random.binomial(
-                    row_classes[q].size * col_classes[l].size, pi[q, l]
-                )
-                c = 0
-                while c < nb_ones:
-                    i = np.random.choice(row_classes[q])
-                    j = np.random.choice(col_classes[l])
-                    if (i, j) not in inserted:
-                        inserted.add((i, j))
-                        c += 1
-
-    X = sp.sparse.coo_matrix(
-        (np.ones(len(inserted)), ([i for i, j in inserted], [j for i, j in inserted])),
-        (n1, n2),
+    nb_column_clusters = (
+        nb_column_clusters if nb_column_clusters else np.random.randint(3, 6)
     )
+    if connection_probabilities is None:
+        connection_probabilities = (
+            np.random.choice(
+                nb_row_clusters * nb_column_clusters,
+                nb_row_clusters * nb_column_clusters,
+                replace=False,
+            )
+            .reshape(nb_row_clusters, nb_column_clusters)
+            .astype(float)
+        )
+        c = 0.02 / connection_probabilities.mean()
+        connection_probabilities *= c
+    row_cluster_proportions = (
+        row_cluster_proportions
+        if row_cluster_proportions
+        else (np.ones(nb_row_clusters) / nb_row_clusters)
+    )
+    column_cluster_proportions = (
+        column_cluster_proportions
+        if column_cluster_proportions
+        else (np.ones(nb_column_clusters) / nb_column_clusters)
+    )
+    try:
+        if verbosity > 0:
+            print("---------- START Graph Generation ---------- ")
+            bar = progressbar.ProgressBar(
+                max_value=nb_row_clusters * nb_column_clusters,
+                widgets=[
+                    progressbar.SimpleProgress(),
+                    " Generating block: ",
+                    " [",
+                    progressbar.Percentage(),
+                    " ] ",
+                    progressbar.Bar(),
+                    " [ ",
+                    progressbar.Timer(),
+                    " ] ",
+                ],
+                redirect_stdout=True,
+            ).start()
+        row_cluster_indicator = np.random.multinomial(
+            1, row_cluster_proportions.flatten(), size=number_of_rows
+        )
+        column_cluster_indicator = np.random.multinomial(
+            1, column_cluster_proportions.flatten(), size=number_of_columns
+        )
+        row_classes = [
+            row_cluster_indicator[:, q].nonzero()[0]
+            for q in range(nb_row_clusters)
+        ]
+        col_classes = [
+            column_cluster_indicator[:, l].nonzero()[0]
+            for l in range(nb_column_clusters)
+        ]
 
-    return {
-        "X": X,
-        "Y1": Y1,
-        "Y2": Y2,
-        "alpha_1": alpha_1,
-        "alpha_2": alpha_2,
-        "pi": pi,
+        rows = np.array([])
+        cols = np.array([])
+        for i, (q, l) in enumerate(
+            [
+                (i, j)
+                for i in range(nb_row_clusters)
+                for j in range(nb_column_clusters)
+            ]
+        ):
+            if verbosity > 0:
+                bar.update(i)
+            n1, n2 = row_classes[q].size, col_classes[l].size
+            nnz = np.random.binomial(n1 * n2, connection_probabilities[q, l])
+            if nnz > 0:
+                row = np.random.choice(row_classes[q], size=2 * nnz)
+                col = np.random.choice(col_classes[l], size=2 * nnz)
+                row_col_unique = np.unique(np.stack((row, col), 1), axis=0)
+                while row_col_unique.shape[0] < nnz:
+                    row = np.random.choice(row_classes[q], size=2 * nnz)
+                    col = np.random.choice(col_classes[l], size=2 * nnz)
+                    row_col_unique = np.unique(np.stack((row, col), 1), axis=0)
+                np.random.shuffle(row_col_unique)
+                rows = np.concatenate((rows, row_col_unique[:nnz, 0]))
+                cols = np.concatenate((cols, row_col_unique[:nnz, 1]))
+
+        graph = scipy.sparse.coo_matrix(
+            (np.ones(rows.size), (rows, cols)),
+            shape=(number_of_rows, number_of_columns),
+        )
+        if verbosity > 0:
+            bar.finish()
+
+    except KeyboardInterrupt:
+        return None
+    finally:
+        if verbosity > 0:
+            bar.finish()
+
+    dataset = {
+        "data": graph,
+        "row_cluster_indicator": row_cluster_indicator,
+        "column_cluster_indicator": column_cluster_indicator,
     }
+
+    return dataset
+
+
+def generate_SBM_dataset(
+    number_of_nodes: Optional[int] = None,
+    number_of_clusters: Optional[int] = None,
+    connection_probabilities: Optional[np.ndarray] = None,
+    cluster_proportions: Optional[np.ndarray] = None,
+    symmetric: Optional[bool] = False,
+    verbosity: Optional[int] = 1,
+) -> dict:
+    """ Generate a sparse graph with Stochastic Block Models.
+
+    Parameters
+    ----------
+    number_of_nodes : int, optional, default : 1000
+        The number of nodes.
+    number_of_clusters : int, optional, default : random between 3 and 5
+        The number of classes of nodes.
+    connection_probabilities : np.ndarray, optional, default : see notes
+        The probability of having an edge between the classes.
+    cluster_proportions : np.ndarray, optional, default : balanced probabilies
+        Proportion of the classes of nodes.
+    symmetric : bool, optional, default : False
+        Specify if the generated adjacency matrix is symmetric.
+    verbosity : int, optional, default : 1
+        Display information during the generation process.
+    Returns
+    -------
+    dataset: dict
+        The generated dataset. Keys contain 'data', the scipy.sparse.coo
+        adjacency matrix; 'cluster_indicator' the np.ndarray of class
+        membership of nodes.
+
+    Notes
+    -----
+    If no connection_probabilities is given, an affiliation graph is generated
+    with random probabilies on diagonal and such as the sparsity of the adjacency
+    matrix is 0.01.
+    """
+    number_of_nodes = number_of_nodes if number_of_nodes else 10 ** 3
+    number_of_clusters = (
+        number_of_clusters if number_of_clusters else np.random.randint(3, 6)
+    )
+    cluster_proportions = (
+        cluster_proportions
+        if cluster_proportions
+        else (np.ones(number_of_clusters) / number_of_clusters)
+    )
+    if connection_probabilities is None:
+        connection_probabilities = (
+            np.ones((number_of_clusters, number_of_clusters))
+            * np.random.rand()
+        )
+        d = connection_probabilities[0, 0] * np.random.randint(
+            2, 20, number_of_clusters
+        )
+        np.fill_diagonal(connection_probabilities, d)
+        c = 0.01 / connection_probabilities.mean()
+        connection_probabilities *= c
+
+    try:
+        if verbosity > 0:
+            print("---------- START Graph Generation ---------- ")
+            bar = progressbar.ProgressBar(
+                max_value=number_of_clusters ** 2,
+                widgets=[
+                    progressbar.SimpleProgress(),
+                    " Generating block: ",
+                    " [",
+                    progressbar.Percentage(),
+                    " ] ",
+                    progressbar.Bar(),
+                    " [ ",
+                    progressbar.Timer(),
+                    " ] ",
+                ],
+                redirect_stdout=True,
+            ).start()
+        cluster_indicator = np.random.multinomial(
+            1, cluster_proportions.flatten(), size=number_of_nodes
+        )
+        classes = [
+            cluster_indicator[:, q].nonzero()[0]
+            for q in range(number_of_clusters)
+        ]
+
+        rows = np.array([])
+        cols = np.array([])
+        for i, (q, l) in enumerate(
+            [
+                (i, j)
+                for i in range(number_of_clusters)
+                for j in range(number_of_clusters)
+            ]
+        ):
+            if verbosity > 0:
+                bar.update(i)
+            n1, n2 = classes[q].size, classes[l].size
+
+            if connection_probabilities[q, l] >= 0.25:
+                for id in classes[q]:
+                    nb_ones = np.random.binomial(
+                        classes[l].size, connection_probabilities[q, l]
+                    )
+                    col = np.random.choice(classes[l], nb_ones, replace=False)
+                    row = np.ones_like(col) * id
+                    row_col_unique = np.unique(np.stack((row, col), 1), axis=0)
+                    np.random.shuffle(row_col_unique)
+                    rows = np.concatenate((rows, row_col_unique[:, 0]))
+                    cols = np.concatenate((cols, row_col_unique[:, 1]))
+            else:
+                nnz = np.random.binomial(
+                    n1 * n2, connection_probabilities[q, l]
+                )
+                if nnz > 0:
+                    row = np.random.choice(classes[q], size=2 * nnz)
+                    col = np.random.choice(classes[l], size=2 * nnz)
+                    row_col_unique = np.unique(np.stack((row, col), 1), axis=0)
+                    while row_col_unique.shape[0] < nnz:
+                        row = np.random.choice(classes[q], size=2 * nnz)
+                        col = np.random.choice(classes[l], size=2 * nnz)
+                        row_col_unique = np.unique(
+                            np.stack((row, col), 1), axis=0
+                        )
+                    np.random.shuffle(row_col_unique)
+                    rows = np.concatenate((rows, row_col_unique[:nnz, 0]))
+                    cols = np.concatenate((cols, row_col_unique[:nnz, 1]))
+
+        inserted = np.stack((rows, cols), axis=1)
+        if symmetric:
+            inserted = inserted[inserted[:, 0] < inserted[:, 1]]
+            inserted = np.concatenate((inserted, inserted[:, [1, 0]]))
+        else:
+            inserted = inserted[inserted[:, 0] != inserted[:, 1]]
+
+        graph = scipy.sparse.coo_matrix(
+            (np.ones(inserted[:, 0].size), (inserted[:, 0], inserted[:, 1])),
+            shape=(number_of_nodes, number_of_nodes),
+        )
+        if verbosity > 0:
+            bar.finish()
+
+    except KeyboardInterrupt:
+        return None
+    finally:
+        if verbosity > 0:
+            bar.finish()
+
+    return {"data": graph, "cluster_indicator": cluster_indicator}

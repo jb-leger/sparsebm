@@ -18,9 +18,43 @@ except ImportError:
     _DEFAULT_USE_GPU = False
 
 
-class LBM(BaseEstimator):
-    """
-    LBM with distribution.
+class LBM_not_sparse(BaseEstimator):
+    """LBM with distribution.
+
+    Parameters
+    ----------
+    n_row_clusters : int
+        Number of row clusters to form
+
+    n_column_clusters : int
+        Number of row clusters to form
+
+    max_iter : int, optional, default: 10000
+        Maximum number of EM iterations
+
+    n_init : int, optional, default: 100
+        Number of initializations that will be run for n_iter_early_stop EM iterations.
+
+    n_init_total_run : int, optional, default: 10
+        Number of the n_init best initializations that will be run until convergence.
+
+    n_iter_early_stop : int, optional, default: 100
+        Number of EM iterations to used to run the n_init initializations.
+
+    rtol : float, default: 1e-10
+        The relative tolerance parameter (see Notes).
+
+    atol : float, default: 1e-4
+        The absolute tolerance parameter (see Notes).
+
+    verbosity : int, optional, default: 1
+        Degree of verbosity. Scale from 0 (no message displayed) to 3.
+
+    use_gpu : bool, optional, default: _DEFAULT_USE_GPU
+        Specify if a GPU should be used.
+
+    gpu_index : int, optional, default: None
+        Specify the gpu index if needed.
 
     Attributes
     ----------
@@ -62,32 +96,6 @@ class LBM(BaseEstimator):
         use_gpu=_DEFAULT_USE_GPU,
         gpu_index=None,
     ):
-        """
-        Parameters
-        ----------
-        n_row_clusters : int
-            Number of row clusters to form
-        n_column_clusters : int
-            Number of row clusters to form
-        max_iter : int, optional, default: 10000
-            Maximum number of EM iterations
-        n_init : int, optional, default: 100
-            Number of initializations that will be run for n_iter_early_stop EM iterations.
-        n_init_total_run : int, optional, default: 10
-            Number of the n_init best initializations that will be run until convergence.
-        n_iter_early_stop : int, optional, default: 100
-            Number of EM iterations to used to run the n_init initializations.
-        rtol : float, default: 1e-10
-            The relative tolerance parameter (see Notes).
-        atol : float, default: 1e-4
-            The absolute tolerance parameter (see Notes).
-        verbosity : int, optional, default: 1
-            Degree of verbosity. Scale from 0 (no message displayed) to 3.
-        use_gpu : bool, optional, default: _DEFAULT_USE_GPU
-            Specify if a GPU should be used.
-        gpu_index : int, optional, default: None
-            Specify the gpu index if needed.
-        """
         self.max_iter = max_iter
         self.n_init = n_init
         self.n_init_total_run = (
@@ -101,14 +109,6 @@ class LBM(BaseEstimator):
         self.n_column_clusters = n_column_clusters
         self.use_gpu = use_gpu
         self.gpu_index = gpu_index
-
-    @property
-    def group_connection_probabilities(self):
-        """array_like: Returns the group connection probabilities"""
-        assert (
-            self.trained_successfully_ == True
-        ), "Model not trained successfully"
-        return self.pi_
 
     @property
     def row_group_membership_probability(self):
@@ -257,7 +257,7 @@ class LBM(BaseEstimator):
         n1, n2 = X.shape
         self._nb_rows = n1
         self._nb_cols = n2
-        indices_ones = self._np.asarray(list(X.nonzero()))
+        X = self._np.asarray(X)
         try:
             # Initialize and start to run each for a while.
 
@@ -293,7 +293,7 @@ class LBM(BaseEstimator):
                     tau_1,
                     tau_2,
                 ) = self._fit_single(
-                    indices_ones,
+                    X,
                     n1,
                     n2,
                     early_stop=self.nb_iter_early_stop,
@@ -353,7 +353,7 @@ class LBM(BaseEstimator):
                     tau_1,
                     tau_2,
                 ) = self._fit_single(
-                    indices_ones,
+                    X,
                     n1,
                     n2,
                     init_params=(pi, alpha_1, alpha_2, tau_1, tau_2),
@@ -377,7 +377,7 @@ class LBM(BaseEstimator):
 
     def _fit_single(
         self,
-        indices_ones,
+        X,
         n1,
         n2,
         early_stop=None,
@@ -389,7 +389,7 @@ class LBM(BaseEstimator):
 
         Parameters
         ----------
-        indices_ones : Non zero indices of the data matrix.
+        X : Non zero indices of the data matrix.
         n1 : Number of rows in the data matrix.
         n2 : Number of columns in the data matrix.
         """
@@ -422,19 +422,19 @@ class LBM(BaseEstimator):
                 n2,
                 self.n_row_clusters,
                 self.n_column_clusters,
-                len(indices_ones),
+                len(X.nonzero()[0]),
             )
 
         # Repeat EM step until convergence.
         for iteration in range(self.max_iter):
             if early_stop and iteration >= early_stop:
                 ll = self._compute_likelihood(
-                    indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2
+                    X, pi, alpha_1, alpha_2, tau_1, tau_2
                 )
                 break
-            if iteration % 5 == 0:
+            if iteration % 10 == 0:
                 ll = self._compute_likelihood(
-                    indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2
+                    X, pi, alpha_1, alpha_2, tau_1, tau_2
                 )
                 if (ll - old_ll) < (self.atol + self.rtol * self._np.abs(ll)):
                     success = True
@@ -446,7 +446,7 @@ class LBM(BaseEstimator):
                     )
                 old_ll = ll
             pi, alpha_1, alpha_2, tau_1, tau_2 = self._step_EM(
-                indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2, n1, n2
+                X, pi, alpha_1, alpha_2, tau_1, tau_2, n1, n2
             )
         else:
             success = True
@@ -466,14 +466,12 @@ class LBM(BaseEstimator):
 
         return success, ll, pi, alpha_1, alpha_2, tau_1, tau_2
 
-    def _step_EM(
-        self, indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2, n1, n2
-    ):
+    def _step_EM(self, X, pi, alpha_1, alpha_2, tau_1, tau_2, n1, n2):
         """Realize EM step. Update both variationnal and model parameters.
 
         Parameters
         ----------
-        indices_ones : Non zero indices of the data matrix.
+        X : The data matrix.
         pi : Connection probability matrix between row and column groups.
         alpha_1 : Row group model parameters.
         alpha_2 : Column group model parameters.
@@ -482,31 +480,23 @@ class LBM(BaseEstimator):
         n1 : Number of rows in the data matrix.
         n2 : Number of columns in the data matrix.
         """
-
-        eps_1 = max(1e-4 / n1, 1e-9)
-        eps_2 = max(1e-4 / n2, 1e-9)
+        eps_1 = 1e-2 / n1
+        eps_2 = 1e-2 / n2
         nq, nl = self.n_row_clusters, self.n_column_clusters
 
         ########################## E-step  ##########################
-
-        # Precomputations needed.
-        u = self._np.zeros((n1, nl))
-        v = self._np.zeros((n2, nq))
-        if self.use_gpu:
-            self._cupyx.scatter_add(u, indices_ones[0], tau_2[indices_ones[1]])
-            self._cupyx.scatter_add(v, indices_ones[1], tau_1[indices_ones[0]])
-        else:
-            self._np.add.at(u, indices_ones[0], tau_2[indices_ones[1]])
-            self._np.add.at(v, indices_ones[1], tau_1[indices_ones[0]])
-
-        # Update of tau_1 with sparsity trick.
+        # # Update of tau_1 with NO sparsity trick.
+        R = tau_2.sum(0).reshape(1, -1)
+        Q = X @ tau_2
         l_tau_1 = (
             (
-                (u.reshape(n1, 1, nl))
-                * (self._np.log(pi) - self._np.log(1 - pi)).reshape(1, nq, nl)
+                (Q.reshape(n1, 1, nl)) * (self._np.log(pi)).reshape(1, nq, nl)
+            ).sum(2)
+            + (
+                (R - Q).reshape(n1, 1, nl)
+                * self._np.log(1 - pi).reshape(1, nq, nl)
             ).sum(2)
             + self._np.log(alpha_1.reshape(1, nq))
-            + (self._np.log(1 - pi) @ tau_2.T).sum(1)
         )
 
         # For computationnal stability reasons 1.
@@ -519,13 +509,18 @@ class LBM(BaseEstimator):
         tau_1 /= tau_1.sum(axis=1).reshape(n1, 1)  # Re-Normalize.
 
         # Update of tau_2 with sparsity trick.
+        T = tau_1.sum(0).reshape(1, -1)
+        S = (tau_1.T @ X).T
+
         l_tau_2 = (
             (
-                (v.reshape(n2, nq, 1))
-                * (self._np.log(pi) - self._np.log(1 - pi)).reshape(1, nq, nl)
+                (S.reshape(n2, nq, 1)) * (self._np.log(pi)).reshape(1, nq, nl)
+            ).sum(1)
+            + (
+                (T - S).reshape(n2, nq, 1)
+                * self._np.log(1 - pi).reshape(1, nq, nl)
             ).sum(1)
             + self._np.log(alpha_2.reshape(1, nl))
-            + (tau_1 @ self._np.log(1 - pi)).sum(0)
         )
 
         # For computationnal stability reasons 1.
@@ -540,44 +535,52 @@ class LBM(BaseEstimator):
         alpha_1 = tau_1.mean(0)
         alpha_2 = tau_2.mean(0)
         pi = (
-            tau_1[indices_ones[0]].reshape(-1, nq, 1)
-            * tau_2[indices_ones[1]].reshape(-1, 1, nl)
-        ).sum(0) / (tau_1.sum(0).reshape(nq, 1) * tau_2.sum(0).reshape(1, nl))
+            tau_1.reshape(n1, 1, nq, 1)
+            * X.reshape(n1, n2, 1, 1)
+            * tau_2.reshape(1, n2, 1, nl)
+        ).sum(0).sum(0) / (
+            tau_1.reshape(n1, 1, nq, 1) * tau_2.reshape(1, n2, 1, nl)
+        ).sum(
+            0
+        ).sum(
+            0
+        )
         return pi, alpha_1, alpha_2, tau_1, tau_2
 
-    def _compute_likelihood(
-        self, indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2
-    ):
+    def _compute_likelihood(self, X, pi, alpha_1, alpha_2, tau_1, tau_2):
         """Compute the log-likelihood of the model with the given parameters.
 
         Parameters
         ----------
-        indices_ones : Non zero indices of the data matrix.
+        X : Data matrix.
         pi : Connection probability matrix between row and column groups.
         alpha_1 : Row group model parameters.
         alpha_2 : Column group model parameters.
         tau_1 : Row group variationnal parameters.
         tau_2 : Column group variationnal parameters.
         """
+        n1, n2 = X.shape
         nq, nl = self.n_row_clusters, self.n_column_clusters
+
         return (
             -self._np.sum(tau_1 * self._np.log(tau_1))
             - self._np.sum(tau_2 * self._np.log(tau_2))
             + tau_1.sum(0) @ self._np.log(alpha_1)
             + tau_2.sum(0) @ self._np.log(alpha_2).T
             + (
-                tau_1[indices_ones[0]].reshape(-1, nq, 1)
-                * tau_2[indices_ones[1]].reshape(-1, 1, nl)
+                tau_1.reshape(n1, 1, nq, 1)
+                * tau_2.reshape(1, n2, 1, nl)
                 * (
-                    self._np.log(pi.reshape(1, nq, nl))
-                    - self._np.log(1 - pi).reshape(1, nq, nl)
+                    X.reshape(n1, n2, 1, 1)
+                    * self._np.log(pi.reshape(1, 1, nq, nl))
+                    + (1 - X.reshape(n1, n2, 1, 1))
+                    * self._np.log(1 - pi.reshape(1, 1, nq, nl))
                 )
             ).sum()
-            + (tau_1.sum(0) @ self._np.log(1 - pi) @ tau_2.sum(0))
         )
 
     def _init_LBM_random(self, n1, n2, nq, nl, nb_ones):
-        """Randomly initialize the LBM model and variationnal parameters.
+        """Randomly initialize the LBM  model and variationnal parameters.
 
         Parameters
         ----------
@@ -598,11 +601,11 @@ class LBM(BaseEstimator):
         tau_2 /= tau_2.sum(axis=1).reshape(n2, 1)
         tau_2[tau_2 < eps_2] = eps_2
         tau_2 /= tau_2.sum(axis=1).reshape(n2, 1)  # Re-Normalize.
-        pi = self._np.random.uniform(0, 1e-7, (nq, nl))
+        pi = self._np.random.uniform(0, 2 * nb_ones / (n1 * n2), (nq, nl))
         return (alpha_1.flatten(), alpha_2.flatten(), tau_1, tau_2, pi)
 
     def __repr__(self):
-        return f"""LBM(
+        return f"""LBM_not_sparse(
                     n_row_clusters={self.n_row_clusters},
                     n_column_clusters={self.n_column_clusters},
                     max_iter={self.max_iter},
@@ -613,24 +616,22 @@ class LBM(BaseEstimator):
                     atol={self.atol},
                     verbosity={self.verbosity},
                     use_gpu={self.use_gpu},
-                    gpu_index={self.gpu_index},
                 )"""
 
     def copy(self):
         """Returns a copy of the model.
         """
         model = LBM(
-            n_row_clusters=self.n_row_clusters,
-            n_column_clusters=self.n_column_clusters,
-            max_iter=self.max_iter,
-            n_init=self.n_init,
-            n_init_total_run=self.n_init_total_run,
-            n_iter_early_stop=self.nb_iter_early_stop,
-            rtol=self.rtol,
-            atol=self.atol,
-            verbosity=self.verbosity,
-            use_gpu=self.use_gpu,
-            gpu_index=self.gpu_index,
+            self.n_row_clusters,
+            self.n_column_clusters,
+            self.max_iter,
+            self.n_init,
+            self.n_init_total_run,
+            self.nb_iter_early_stop,
+            self.rtol,
+            self.atol,
+            self.verbosity,
+            self.use_gpu,
         )
         model._nb_rows = self._nb_rows
         model._nb_cols = self._nb_cols
