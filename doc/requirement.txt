@@ -1,5 +1,6 @@
 # doc/requirements.txt
 m2r2
+Cython
 numpy
 scipy
 gputil
