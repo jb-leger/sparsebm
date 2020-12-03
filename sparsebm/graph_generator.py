@@ -5,7 +5,7 @@ import progressbar
 from typing import Optional
 
 
-def generate_bernouilli_LBM_dataset(
+def generate_LBM_dataset(
     number_of_rows: int,
     number_of_columns: int,
     nb_row_clusters: int,
@@ -122,7 +122,7 @@ def generate_bernouilli_LBM_dataset(
     return dataset
 
 
-def generate_bernouilli_SBM_dataset(
+def generate_SBM_dataset(
     number_of_nodes,
     number_of_clusters,
     connection_probabilities,

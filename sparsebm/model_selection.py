@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from . import SBM_bernouilli, LBM_bernouilli
+from . import SBM, LBM
 from .utils import (
     lbm_merge_group,
     sbm_merge_group,
@@ -53,8 +53,8 @@ class ModelSelection:
         self.n_clusters_max = n_clusters_max
 
     @property
-    def selected_model(self) -> Union[LBM_bernouilli, SBM_bernouilli]:
-        """sparsebm.LBM_bernouilli or sparsebm.SBM_bernouilli: Returns the optimal model explore so far."""
+    def selected_model(self) -> Union[LBM, SBM]:
+        """sparsebm.LBM or sparsebm.SBM: Returns the optimal model explore so far."""
         assert self.model_explored, "Model selection not trained. Use fit()"
         return max(
             [m["model"] for m in self.model_explored.values()],
@@ -65,7 +65,7 @@ class ModelSelection:
         self,
         graph: Union[spmatrix, np.ndarray],
         symmetric: Optional[bool] = False,
-    ) -> Union[LBM_bernouilli, SBM_bernouilli]:
+    ) -> Union[LBM, SBM]:
         """ Perform model selection of the co-clustering.
 
         Parameters
@@ -77,7 +77,7 @@ class ModelSelection:
 
         Returns
         -------
-        sparsebm.LBM_bernouilli or sparsebm.SBM_bernouilli
+        sparsebm.LBM or sparsebm.SBM
             The best trained model according to the ICL.
         """
         if self._model_type == "SBM" and graph.shape[0] != graph.shape[0]:
@@ -94,7 +94,7 @@ class ModelSelection:
         )
         # Instantiate and training first model.
         if self._model_type == "LBM":
-            model = LBM_bernouilli(
+            model = LBM(
                 1,
                 1,
                 max_iter=5000,
@@ -107,7 +107,7 @@ class ModelSelection:
             )
             model.fit(graph)
         else:
-            model = SBM_bernouilli(
+            model = SBM(
                 1,
                 max_iter=5000,
                 n_init=1,
@@ -333,11 +333,8 @@ class ModelSelection:
         return model_explored
 
     def _select_and_train_best_model(
-        self,
-        model: Union[LBM_bernouilli, SBM_bernouilli],
-        strategy: str,
-        type: int = None,
-    ) -> Tuple[float, Union[LBM_bernouilli, SBM_bernouilli]]:
+        self, model: Union[LBM, SBM], strategy: str, type: int = None
+    ) -> Tuple[float, Union[LBM, SBM]]:
         """ Given model and a strategy, perform all possible merges/splits of
         classes and return the best one.
 
@@ -347,7 +344,7 @@ class ModelSelection:
 
         Parameters
         ----------
-        model : sparsebm.LBM_bernouilli or sparsebm.SBM_bernouilli
+        model : sparsebm.LBM or sparsebm.SBM
             The model from which all merges/splits are tested.
         strategy : {'merge', 'split'}
             The type of strategy.
@@ -357,7 +354,7 @@ class ModelSelection:
 
         Returns
         -------
-        tuple of (float, sparsebm.LBM_bernouilli or sparsebm.SBM_bernouilli)
+        tuple of (float, sparsebm.LBM or sparsebm.SBM)
             The higher ICL value and its associated model, from all merges/splits.
         """
         assert strategy in ["merge", "split"]

@@ -1,11 +1,10 @@
-from .. import SBM, generate_SBM_dataset
+from .. import generate_SBM_dataset
 
 import numpy as np
-import time
 import itertools
 
 
-def test_sbm():
+def test_generate_sbm():
     np.random.seed(0)
     n = 10 ** 3
     nq = 4
@@ -22,23 +21,7 @@ def test_sbm():
 
     data = generate_SBM_dataset(n, nq, pi_sim, alpha, symmetric=True)
     X, Y1, = (data["data"], data["cluster_indicator"])
-
-    model = SBM(
-        nq,
-        max_iter=10,
-        n_init=1,
-        n_init_total_run=1,
-        n_iter_early_stop=1,
-        atol=1e-5,
-        verbosity=0,
-        use_gpu=False,
-    )
-    model.fit(X, symmetric=True)
-
-    pi = model.pi_
-    bp = max(
-        itertools.permutations(range(nq)),
-        key=lambda permut: (model.tau_[:, permut] * Y1).sum(),
-    )
-
-    assert np.max(np.abs(pi[:, bp][bp, :] - pi_sim)) < 0.04
+    assert np.abs(pi_sim.mean() - X.nnz / np.prod(X.shape)) < 10 ** -4
+    assert X.shape == (n, n)
+    assert np.all(Y1[0] == np.array([0, 1, 0, 0]))
+    assert Y1.shape == (n, nq)

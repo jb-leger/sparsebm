@@ -95,7 +95,11 @@ setup(
     #
     # Similar to `install_requires` above, these must be valid existing
     # projects.
-    extras_require={"gpu": ["cupy"], "test": ["pytest"]},  # Optional
+    extras_require={
+        "gpu": ["cupy"],
+        "test": ["pytest"],
+        "experiments": ["rpy2"],
+    },  # Optional
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # `pip` to create the appropriate form of executable for the target

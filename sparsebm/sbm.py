@@ -19,9 +19,9 @@ except ImportError:
     _DEFAULT_USE_GPU = False
 
 
-class SBM_bernouilli(BaseEstimator):
+class SBM(BaseEstimator):
     """
-    SBM with bernouilli distribution.
+    SBM with bernoulli distribution.
 
     Attributes
     ----------
@@ -326,7 +326,7 @@ class SBM_bernouilli(BaseEstimator):
         in_place=False,
         run_number=None,
     ):
-        """Perform one run of the SBM_bernouilli algorithm with one random initialization.
+        """Perform one run of the SBM algorithm with one random initialization.
 
         Parameters
         ----------
@@ -353,7 +353,7 @@ class SBM_bernouilli(BaseEstimator):
             else:
                 (pi, alpha, tau) = init_params
         else:
-            alpha, tau, pi = self._init_bernouilli_SBM_random(
+            alpha, tau, pi = self._init_SBM_random(
                 n, self.n_clusters, len(indices_ones)
             )
 
@@ -473,8 +473,8 @@ class SBM_bernouilli(BaseEstimator):
         )
         return ll / 2 if self.symmetric else ll
 
-    def _init_bernouilli_SBM_random(self, n1, nq, nb_ones):
-        """Randomly initialize the SBM bernouilli model and variationnal parameters.
+    def _init_SBM_random(self, n1, nq, nb_ones):
+        """Randomly initialize the SBM  model and variationnal parameters.
 
         Parameters
         ----------
@@ -498,7 +498,7 @@ class SBM_bernouilli(BaseEstimator):
         return (alpha.flatten(), tau, pi)
 
     def __repr__(self):
-        return f"""SBM_bernouilli(
+        return f"""SBM(
                     n_clusters={self.n_clusters},
                     max_iter={self.max_iter},
                     n_init={self.n_init},
@@ -514,7 +514,7 @@ class SBM_bernouilli(BaseEstimator):
     def copy(self):
         """Returns a copy of the model.
         """
-        model = SBM_bernouilli(
+        model = SBM(
             self.n_clusters,
             max_iter=self.max_iter,
             n_init=self.n_init,
@@ -536,59 +536,3 @@ class SBM_bernouilli(BaseEstimator):
         model.tau_ = copy.copy(self.tau_)
 
         return model
-
-
-if __name__ == "__main__":
-    from sparsebm import generate_bernouilli_SBM_dataset
-    import numpy as np
-
-    number_of_nodes = 10 ** 3
-    number_of_clusters = 4
-    cluster_proportions = np.ones(number_of_clusters) / number_of_clusters
-    connection_probabilities = (
-        np.array(
-            [
-                [0.05, 0.018, 0.006, 0.0307],
-                [0.018, 0.037, 0, 0],
-                [0.006, 0, 0.055, 0.012],
-                [0.0307, 0, 0.012, 0.043],
-            ]
-        )
-        * 2
-    )
-    dataset = generate_bernouilli_SBM_dataset(
-        number_of_nodes,
-        number_of_clusters,
-        connection_probabilities,
-        cluster_proportions,
-        symmetric=True,
-    )
-
-    from sparsebm import SBM_bernouilli
-    import sklearn
-    from sklearn import metrics
-
-    graph = dataset["data"]
-    clusters_index = dataset["cluster_indicator"].argmax(1)
-
-    model = SBM_bernouilli(verbosity=0)
-    train = test = np.arange(number_of_nodes)
-    n_clusters = [1, 2, 3, 4, 5, 6, 7, 8]
-    clf = sklearn.model_selection.GridSearchCV(
-        estimator=model,
-        n_jobs=4,
-        param_grid={"n_clusters": n_clusters},
-        cv=[[train, test]],
-        verbose=1,
-    )
-    print("Start grid search algorithm")
-    clf.fit(graph, symmetric=True)
-    ari = metrics.adjusted_rand_score(
-        clusters_index, clf.best_estimator_.labels
-    )
-    print(
-        "Best number of classes is {} according to ICL".format(
-            clf.best_params_["n_clusters"]
-        )
-    )
-    print("Adjusted Rand Index is {}".format(ari))

@@ -2,9 +2,9 @@
 =============================================
 A demo of the Latent Block Model
 =============================================
-This example demonstrates how to generate a dataset from the bernouilli LBM
+This example demonstrates how to generate a dataset from the bernoulli LBM
 and cluster it using the Latent Block Model.
-The data is generated with the ``generate_bernouilli_LBM_dataset`` function,
+The data is generated with the ``generate_LBM_dataset`` function,
 and passed to the Latent Block Model. The rows and columns of the matrix
 are rearranged to show the clusters found by the model.
 """
@@ -15,7 +15,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sklearn.metrics
 import sparsebm
-from sparsebm import generate_bernouilli_LBM_dataset, LBM_bernouilli
+from sparsebm import generate_LBM_dataset, LBM
 from sparsebm.utils import reorder_rows, ARI, CARI
 
 ###
@@ -48,7 +48,7 @@ assert (
 ###
 ### Generate The dataset.
 ###
-dataset = generate_bernouilli_LBM_dataset(
+dataset = generate_LBM_dataset(
     number_of_rows,
     number_of_columns,
     nb_row_clusters,
@@ -64,7 +64,7 @@ row_clusters_index = row_cluster_indicator.argmax(1)
 column_clusters_index = column_cluster_indicator.argmax(1)
 
 # instantiate the Latent Block Model class.
-model = LBM_bernouilli(
+model = LBM(
     nb_row_clusters,  # A number of row classes must be specify. Otherwise see model selection.
     nb_column_clusters,  # A number of column classes must be specify. Otherwise see model selection.
     n_init=100,  # Specifying the number of initializations to perform.

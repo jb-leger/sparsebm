@@ -46,6 +46,10 @@ n_init_total_run = (
 
 
 def train_with_both_model(dataset_file, gpu_index):
+    if not os.path.exists("./experiments/results"):
+        os.makedirs("./experiments/results")
+    if not os.path.exists("./experiments/results/sparsity_fixed"):
+        os.makedirs("./experiments/results/sparsity_fixed")
     print(dataset_file)
 
     results_files_already_done = glob.glob(
@@ -70,7 +74,7 @@ def train_with_both_model(dataset_file, gpu_index):
     if not_sparse:
         # instantiate the Latent Block Model class.
         print("Training not sparse")
-        model = experiments.lbm_not_sparse.LBM_bernouilli_not_sparse(
+        model = experiments.lbm_not_sparse.LBM_not_sparse(
             nb_row_clusters,  # A number of row classes must be specify. Otherwise see model selection.
             nb_column_clusters,  # A number of column classes must be specify. Otherwise see model selection.
             n_init=n_init,  # Specifying the number of initializations to perform.
@@ -105,7 +109,7 @@ def train_with_both_model(dataset_file, gpu_index):
 
     print("Training sparse")
     # instantiate the Latent Block Model class.
-    model2 = sparsebm.lbm.LBM_bernouilli(
+    model2 = sparsebm.lbm.LBM(
         nb_row_clusters,  # A number of row classes must be specify. Otherwise see model selection.
         nb_column_clusters,  # A number of column classes must be specify. Otherwise see model selection.
         n_init=n_init,  # Specifying the number of initializations to perform.

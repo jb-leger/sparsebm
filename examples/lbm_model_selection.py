@@ -2,10 +2,10 @@
 =================================================================
 A demo of the Model Selection applied to the Latent Block Model
 =================================================================
-This example demonstrates how to generate a dataset from the bernouilli LBM
+This example demonstrates how to generate a dataset from the bernoulli LBM
 and cluster it using the Latent Block Model without a prior knowledge on the
 number of classes. The data is generated with the
-``generate_bernouilli_LBM_dataset`` function, and passed to the ModelSelection
+``generate_LBM_dataset`` function, and passed to the ModelSelection
 class. The rows and columns of the matrix are rearranged to show the clusters
 found by the model.
 """
@@ -15,7 +15,7 @@ print(__doc__)
 import numpy as np
 import matplotlib.pyplot as plt
 import sparsebm
-from sparsebm import generate_bernouilli_LBM_dataset, ModelSelection
+from sparsebm import generate_LBM_dataset, ModelSelection
 from sparsebm.utils import reorder_rows, ARI, CARI
 
 ###
@@ -48,7 +48,7 @@ assert (
 ###
 ### Generate The dataset.
 ###
-dataset = generate_bernouilli_LBM_dataset(
+dataset = generate_LBM_dataset(
     number_of_rows,
     number_of_columns,
     nb_row_clusters,

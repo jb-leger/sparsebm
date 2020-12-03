@@ -2,9 +2,9 @@
 =============================================
 A demo of the Stochastic Block Model
 =============================================
-This example demonstrates how to generate a dataset from the bernouilli SBM
+This example demonstrates how to generate a dataset from the bernoulli SBM
 and cluster it using the Stochastic Block Model.
-The data is generated with the ``generate_bernouilli_SBM_dataset`` function,
+The data is generated with the ``generate_SBM_dataset`` function,
 and passed to the Stochastic Block Model. The rows and columns of the matrix
 are rearranged to show the clusters found by the model.
 """
@@ -14,7 +14,7 @@ print(__doc__)
 import numpy as np
 import matplotlib.pyplot as plt
 import sparsebm
-from sparsebm import generate_bernouilli_SBM_dataset, SBM_bernouilli
+from sparsebm import generate_SBM_dataset, SBM
 from sparsebm.utils import reorder_rows, ARI
 
 # Specifying the parameters of the dataset to generate.
@@ -41,7 +41,7 @@ assert (
 )
 
 # Generate The dataset.
-dataset = generate_bernouilli_SBM_dataset(
+dataset = generate_SBM_dataset(
     number_of_nodes,
     number_of_clusters,
     connection_probabilities,
@@ -53,7 +53,7 @@ cluster_indicator = dataset["cluster_indicator"]
 clusters_index = cluster_indicator.argmax(1)
 
 # instantiate the Stochastic Block Model class.
-model = SBM_bernouilli(
+model = SBM(
     number_of_clusters,  # A number of classes must be specify. Otherwise see model selection.
     n_init=50,  # Specifying the number of initializations to perform.
     n_iter_early_stop=30,  # Specifying the number of EM-steps to perform on each init.

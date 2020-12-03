@@ -26,7 +26,7 @@ pip3 install cupy
 
 ```python
 import numpy as np
-from sparsebm import generate_bernouilli_SBM_dataset
+from sparsebm import generate_SBM_dataset
 
 # Specifying the parameters of the dataset to generate.
 number_of_nodes = 10 ** 3
@@ -44,7 +44,7 @@ connection_probabilities = np.array(
 )  # The probability of link between the classes. Here symmetric.
 
 # Generate The dataset.
-dataset = generate_bernouilli_SBM_dataset(
+dataset = generate_SBM_dataset(
     number_of_nodes,
     number_of_clusters,
     connection_probabilities,
@@ -55,13 +55,13 @@ graph = dataset["data"]
 cluster_indicator = dataset["cluster_indicator"]
 ```
 
-### Infere with sparsebm SBM_bernouilli:
- - Use the bernouilli Stochastic Bloc Model:
+### Infere with sparsebm SBM:
+ - Use the bernoulli Stochastic Bloc Model:
 ```python
-    from sparsebm import SBM_bernouilli
+    from sparsebm import SBM
 
     # instantiate the Stochastic Block Model class.
-    model = SBM_bernouilli(
+    model = SBM(
         number_of_clusters,  # A number of classes must be specify. Otherwise see model selection.
         n_init=50,  # Specifying the number of initializations to perform.
         n_iter_early_stop=30,  # Specifying the number of EM-steps to perform on each init.
@@ -72,6 +72,3 @@ cluster_indicator = dataset["cluster_indicator"]
     print("Labels:", model.labels)
 ```
 To use GPU acceleration, CUPY needs to be installed and replace gpu_number to the desired GPU index.
-
-
-

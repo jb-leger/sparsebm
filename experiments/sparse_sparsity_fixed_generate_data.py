@@ -1,6 +1,6 @@
 import numpy as np
 import sparsebm
-from sparsebm import generate_bernouilli_LBM_dataset, ModelSelection
+from sparsebm import generate_LBM_dataset, ModelSelection
 from sparsebm.utils import reorder_rows, ARI, CARI
 import scipy.sparse as ss
 
@@ -50,7 +50,7 @@ for n1, n2 in np.stack((number_of_rows, number_of_columns), 1):
     nbtt = 100
     for i in range(nbtt):
         print("Generate dataset {}/{}".format(i, nbtt))
-        dataset = generate_bernouilli_LBM_dataset(
+        dataset = generate_LBM_dataset(
             n1,
             n2,
             nb_row_clusters,

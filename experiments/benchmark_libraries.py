@@ -5,7 +5,7 @@ os.environ["MKL_NUM_THREADS"] = str(NB_THREAD_MAX)
 os.environ["NUMEXPR_NUM_THREADS"] = str(NB_THREAD_MAX)
 os.environ["OMP_NUM_THREADS"] = str(NB_THREAD_MAX)
 
-from sparsebm import LBM_bernouilli
+from sparsebm import LBM
 from sparsebm.utils import CARI
 import numpy as np
 from resource import getrusage as resource_usage, RUSAGE_SELF
@@ -137,7 +137,7 @@ def train_with_sparsebm(
     if save_f in results_files_already_done:
         print("Already Done")
         return None
-    model = LBM_bernouilli(
+    model = LBM(
         nb_row_clusters,
         nb_column_clusters,
         n_init=100,
@@ -201,7 +201,7 @@ def train_with_blockmodels(
     Br = ro.r.matrix(B, nrow=nr, ncol=nc)
     network = robjects.ListVector({"adjacency": Br})
 
-    model = LBM_bernouilli(
+    model = LBM(
         nb_row_clusters,
         nb_column_clusters,
         n_init=1,
@@ -213,7 +213,7 @@ def train_with_blockmodels(
     model.fit(graph)
     init_list = []
     for _ in range(100):
-        _, _, tau_1_init, tau_2_init, _ = model._init_bernouilli_LBM_random(
+        _, _, tau_1_init, tau_2_init, _ = model._init_LBM_random(
             n1, n2, nb_row_clusters, nb_column_clusters, graph.nnz
         )
         nr, nc = tau_1_init.shape

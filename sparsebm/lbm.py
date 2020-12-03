@@ -18,9 +18,9 @@ except ImportError:
     _DEFAULT_USE_GPU = False
 
 
-class LBM_bernouilli(BaseEstimator):
+class LBM(BaseEstimator):
     """
-    LBM with bernouilli distribution.
+    LBM with distribution.
 
     Attributes
     ----------
@@ -385,7 +385,7 @@ class LBM_bernouilli(BaseEstimator):
         in_place=False,
         run_number=None,
     ):
-        """Perform one run of the LBM_bernouilli algorithm with one random initialization.
+        """Perform one run of the LBM algorithm with one random initialization.
 
         Parameters
         ----------
@@ -417,7 +417,7 @@ class LBM_bernouilli(BaseEstimator):
             else:
                 (pi, alpha_1, alpha_2, tau_1, tau_2) = init_params
         else:
-            alpha_1, alpha_2, tau_1, tau_2, pi = self._init_bernouilli_LBM_random(
+            alpha_1, alpha_2, tau_1, tau_2, pi = self._init_LBM_random(
                 n1,
                 n2,
                 self.n_row_clusters,
@@ -576,8 +576,8 @@ class LBM_bernouilli(BaseEstimator):
             + (tau_1.sum(0) @ self._np.log(1 - pi) @ tau_2.sum(0))
         )
 
-    def _init_bernouilli_LBM_random(self, n1, n2, nq, nl, nb_ones):
-        """Randomly initialize the LBM bernouilli model and variationnal parameters.
+    def _init_LBM_random(self, n1, n2, nq, nl, nb_ones):
+        """Randomly initialize the LBM model and variationnal parameters.
 
         Parameters
         ----------
@@ -602,7 +602,7 @@ class LBM_bernouilli(BaseEstimator):
         return (alpha_1.flatten(), alpha_2.flatten(), tau_1, tau_2, pi)
 
     def __repr__(self):
-        return f"""LBM_bernouilli(
+        return f"""LBM(
                     n_row_clusters={self.n_row_clusters},
                     n_column_clusters={self.n_column_clusters},
                     max_iter={self.max_iter},
@@ -619,7 +619,7 @@ class LBM_bernouilli(BaseEstimator):
     def copy(self):
         """Returns a copy of the model.
         """
-        model = LBM_bernouilli(
+        model = LBM(
             n_row_clusters=self.n_row_clusters,
             n_column_clusters=self.n_column_clusters,
             max_iter=self.max_iter,

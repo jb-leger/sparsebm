@@ -2,10 +2,10 @@
 =====================================================================
 A demo of the Model Selection applied to the Stochastic Block Model
 =====================================================================
-This example demonstrates how to generate a dataset from the bernouilli SBM
+This example demonstrates how to generate a dataset from the bernoulli SBM
 and cluster it using the Stochastic Block Model without a prior knowledge on
 the number of classes. The data is generated with the
-``generate_bernouilli_SBM_dataset`` function, and passed to the ModelSelection
+``generate_SBM_dataset`` function, and passed to the ModelSelection
 class. The rows and columns of the matrix are rearranged to show the clusters
 found by the model.
 """
@@ -15,7 +15,7 @@ print(__doc__)
 import numpy as np
 import matplotlib.pyplot as plt
 import sparsebm
-from sparsebm import generate_bernouilli_SBM_dataset, ModelSelection
+from sparsebm import generate_SBM_dataset, ModelSelection
 from sparsebm.utils import reorder_rows, ARI
 
 # Specifying the parameters of the dataset to generate.
@@ -39,7 +39,7 @@ assert (
 )
 
 # Generate The dataset.
-dataset = generate_bernouilli_SBM_dataset(
+dataset = generate_SBM_dataset(
     number_of_nodes,
     number_of_clusters,
     connection_probabilities,
