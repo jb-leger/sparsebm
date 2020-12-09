@@ -2,6 +2,7 @@ import sys
 import copy
 import progressbar
 import numpy as np
+import scipy.sparse as sp
 from heapq import heappush, heappushpop
 from itertools import count
 from sklearn.utils.estimator_checks import check_estimator
@@ -232,7 +233,14 @@ class SBM(BaseEstimator):
         n, n2 = X.shape
         assert n == n2, "Entry matrix is not squared"
         self._nb_rows = n
-        indices_ones = self._np.asarray(list(X.nonzero()))
+        X = sp.csr_matrix(X)
+        if self.use_gpu:
+            X = self._cupyx.scipy.sparse.csr_matrix(X.astype(float))
+            X_coo = X.tocoo()
+            indices_ones = [X_coo.row, X_coo.col]
+        else:
+            indices_ones = list(X.nonzero())
+
         try:
             # Initialize and start to run each for a while.
 
@@ -260,6 +268,7 @@ class SBM(BaseEstimator):
                 if self.verbosity > 0:
                     bar.update(run_number)
                 (success, ll, pi, alpha, tau) = self._fit_single(
+                    X,
                     indices_ones,
                     n,
                     early_stop=self.n_iter_early_stop,
@@ -298,6 +307,7 @@ class SBM(BaseEstimator):
                 (pi, alpha, tau) = (init[2], init[3], init[4])
 
                 (success, ll, pi, alpha, tau) = self._fit_single(
+                    X,
                     indices_ones,
                     n,
                     init_params=(pi, alpha, tau),
@@ -319,6 +329,7 @@ class SBM(BaseEstimator):
 
     def _fit_single(
         self,
+        X,
         indices_ones,
         n,
         early_stop=None,
@@ -330,8 +341,10 @@ class SBM(BaseEstimator):
 
         Parameters
         ----------
+        X : scipy.sparse.csr_matrix, shape=(n,n)
+            Matrix to be analyzed
         indices_ones : Non zero indices of the data matrix.
-        n1 : Number of rows in the data matrix.
+        n : Number of rows in the data matrix.
         """
         old_ll = -self._np.inf
         success = False
@@ -353,10 +366,7 @@ class SBM(BaseEstimator):
             else:
                 (pi, alpha, tau) = init_params
         else:
-            alpha, tau, pi = self._init_SBM_random(
-                n, self.n_clusters, len(indices_ones)
-            )
-
+            alpha, tau, pi = self._init_SBM_random(n, self.n_clusters, X.nnz)
         # Repeat EM step until convergence.
         for iteration in range(self.max_iter):
             if early_stop and iteration >= early_stop:
@@ -373,7 +383,7 @@ class SBM(BaseEstimator):
                         f"\t EM Iter: {iteration:5d}  \t  log-like:{ll.get() if self.use_gpu else ll:.4f} \t diff:{self._np.abs(old_ll - ll).get() if self.use_gpu else self._np.abs(old_ll - ll):.6f}"
                     )
                 old_ll = ll
-            pi, alpha, tau = self._step_EM(indices_ones, pi, alpha, tau, n)
+            pi, alpha, tau = self._step_EM(X, indices_ones, pi, alpha, tau, n)
         else:
             success = True
         if self.verbosity > 1 and run_number:
@@ -390,11 +400,13 @@ class SBM(BaseEstimator):
 
         return success, ll, pi, alpha, tau
 
-    def _step_EM(self, indices_ones, pi, alpha, tau, n1):
+    def _step_EM(self, X, indices_ones, pi, alpha, tau, n1):
         """Realize EM step. Update both variationnal and model parameters.
 
         Parameters
         ----------
+        X : scipy.sparse.csr_matrix, shape=(n1, n1)
+            Matrix to be analyzed
         indices_ones : Non zero indices of the data matrix.
         pi : Connection probability matrix between row and column groups.
         alpha : Group model parameters.
@@ -405,14 +417,7 @@ class SBM(BaseEstimator):
         nq = self.n_clusters
 
         ########################## E-step  ##########################
-
-        # Precomputations needed.
-        u = self._np.zeros((n1, nq))
-        if self.use_gpu:
-            self._cupyx.scatter_add(u, indices_ones[0], tau[indices_ones[1]])
-        else:
-            self._np.add.at(u, indices_ones[0], tau[indices_ones[1]])
-
+        u = X.dot(tau)
         # Update of tau_1 with sparsity trick.
         l_tau = (
             (

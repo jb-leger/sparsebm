@@ -9,6 +9,18 @@ from .utils import (
 )
 from typing import Any, Tuple, Union, Optional
 from scipy.sparse import spmatrix
+import scipy.sparse as sp
+
+try:
+    import cupy
+    import cupyx
+    import GPUtil
+
+    _CUPY_INSTALLED = True
+    _DEFAULT_USE_GPU = True
+except ImportError:
+    _CUPY_INSTALLED = False
+    _DEFAULT_USE_GPU = False
 
 
 class ModelSelection:
@@ -45,7 +57,7 @@ class ModelSelection:
             raise Exception("model_type parameter must be 'SBM' or 'LBM'")
 
         self._model_type = model_type
-        self._use_gpu = use_gpu
+        self._use_gpu = use_gpu if (use_gpu and _CUPY_INSTALLED) else False
         self._gpu_index = gpu_index
         self._plot = plot
         self._figure = plt.subplots(1) if plot else None
@@ -92,6 +104,11 @@ class ModelSelection:
             np.asarray(graph.sum(1)).squeeze(),
             np.asarray(graph.sum(0)).squeeze(),
         )
+
+        self._X = sp.csr_matrix(graph)
+        if self._use_gpu:
+            self._X = cupyx.scipy.sparse.csr_matrix(self._X.astype(float))
+
         # Instantiate and training first model.
         if self._model_type == "LBM":
             model = LBM(
@@ -432,6 +449,7 @@ class ModelSelection:
         for ic, m in models[:5]:
             if self._model_type == "LBM":
                 m._fit_single(
+                    self._X,
                     self._indices_ones,
                     self.graph.shape[0],
                     self.graph.shape[1],
@@ -441,6 +459,7 @@ class ModelSelection:
                 )
             else:
                 m._fit_single(
+                    self._X,
                     self._indices_ones,
                     self.graph.shape[0],
                     init_params=True,
@@ -453,6 +472,7 @@ class ModelSelection:
         # The best model is trained until convergence.
         if self._model_type == "LBM":
             models[0][1]._fit_single(
+                self._X,
                 self._indices_ones,
                 self.graph.shape[0],
                 self.graph.shape[1],
@@ -461,6 +481,7 @@ class ModelSelection:
             )
         else:
             models[0][1]._fit_single(
+                self._X,
                 self._indices_ones,
                 self.graph.shape[0],
                 init_params=True,

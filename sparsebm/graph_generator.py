@@ -64,12 +64,12 @@ def generate_LBM_dataset(
         connection_probabilities *= c
     row_cluster_proportions = (
         row_cluster_proportions
-        if row_cluster_proportions
+        if row_cluster_proportions is not None
         else (np.ones(nb_row_clusters) / nb_row_clusters)
     )
     column_cluster_proportions = (
         column_cluster_proportions
-        if column_cluster_proportions
+        if column_cluster_proportions is not None
         else (np.ones(nb_column_clusters) / nb_column_clusters)
     )
     try:
@@ -195,7 +195,7 @@ def generate_SBM_dataset(
     )
     cluster_proportions = (
         cluster_proportions
-        if cluster_proportions
+        if cluster_proportions is not None
         else (np.ones(number_of_clusters) / number_of_clusters)
     )
     if connection_probabilities is None:

@@ -2,6 +2,7 @@ import sys
 import copy
 import progressbar
 import numpy as np
+import scipy.sparse as sp
 from heapq import heappush, heappushpop
 from itertools import count
 from sklearn.base import BaseEstimator
@@ -257,7 +258,14 @@ class LBM(BaseEstimator):
         n1, n2 = X.shape
         self._nb_rows = n1
         self._nb_cols = n2
-        indices_ones = self._np.asarray(list(X.nonzero()))
+        X = sp.csr_matrix(X)
+        if self.use_gpu:
+            X = self._cupyx.scipy.sparse.csr_matrix(X.astype(float))
+            X_coo = X.tocoo()
+            indices_ones = [X_coo.row, X_coo.col]
+        else:
+            indices_ones = list(X.nonzero())
+
         try:
             # Initialize and start to run each for a while.
 
@@ -293,6 +301,7 @@ class LBM(BaseEstimator):
                     tau_1,
                     tau_2,
                 ) = self._fit_single(
+                    X,
                     indices_ones,
                     n1,
                     n2,
@@ -353,6 +362,7 @@ class LBM(BaseEstimator):
                     tau_1,
                     tau_2,
                 ) = self._fit_single(
+                    X,
                     indices_ones,
                     n1,
                     n2,
@@ -377,6 +387,7 @@ class LBM(BaseEstimator):
 
     def _fit_single(
         self,
+        X,
         indices_ones,
         n1,
         n2,
@@ -389,6 +400,8 @@ class LBM(BaseEstimator):
 
         Parameters
         ----------
+        X : scipy.sparse.csr_matrix, shape=(n1, n2)
+            Matrix to be analyzed
         indices_ones : Non zero indices of the data matrix.
         n1 : Number of rows in the data matrix.
         n2 : Number of columns in the data matrix.
@@ -418,11 +431,7 @@ class LBM(BaseEstimator):
                 (pi, alpha_1, alpha_2, tau_1, tau_2) = init_params
         else:
             alpha_1, alpha_2, tau_1, tau_2, pi = self._init_LBM_random(
-                n1,
-                n2,
-                self.n_row_clusters,
-                self.n_column_clusters,
-                len(indices_ones),
+                n1, n2, self.n_row_clusters, self.n_column_clusters, X.nnz
             )
 
         # Repeat EM step until convergence.
@@ -446,7 +455,7 @@ class LBM(BaseEstimator):
                     )
                 old_ll = ll
             pi, alpha_1, alpha_2, tau_1, tau_2 = self._step_EM(
-                indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2, n1, n2
+                X, indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2, n1, n2
             )
         else:
             success = True
@@ -467,12 +476,14 @@ class LBM(BaseEstimator):
         return success, ll, pi, alpha_1, alpha_2, tau_1, tau_2
 
     def _step_EM(
-        self, indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2, n1, n2
+        self, X, indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2, n1, n2
     ):
         """Realize EM step. Update both variationnal and model parameters.
 
         Parameters
         ----------
+        X : scipy.sparse.csr_matrix, shape=(n1, n2)
+            Matrix to be analyzed
         indices_ones : Non zero indices of the data matrix.
         pi : Connection probability matrix between row and column groups.
         alpha_1 : Row group model parameters.
@@ -488,16 +499,8 @@ class LBM(BaseEstimator):
         nq, nl = self.n_row_clusters, self.n_column_clusters
 
         ########################## E-step  ##########################
-
-        # Precomputations needed.
-        u = self._np.zeros((n1, nl))
-        v = self._np.zeros((n2, nq))
-        if self.use_gpu:
-            self._cupyx.scatter_add(u, indices_ones[0], tau_2[indices_ones[1]])
-            self._cupyx.scatter_add(v, indices_ones[1], tau_1[indices_ones[0]])
-        else:
-            self._np.add.at(u, indices_ones[0], tau_2[indices_ones[1]])
-            self._np.add.at(v, indices_ones[1], tau_1[indices_ones[0]])
+        u = X.dot(tau_2)  # Shape is (n1,nl)
+        v = X.T.dot(tau_1)  # Shape is (n2,nq)
 
         # Update of tau_1 with sparsity trick.
         l_tau_1 = (
@@ -599,6 +602,9 @@ class LBM(BaseEstimator):
         tau_2[tau_2 < eps_2] = eps_2
         tau_2 /= tau_2.sum(axis=1).reshape(n2, 1)  # Re-Normalize.
         pi = self._np.random.uniform(0, 1e-7, (nq, nl))
+        pi = self._np.random.uniform(
+            0.2 * nb_ones / (n1 * n2), 2 * nb_ones / (n1 * n2), (nq, nl)
+        )
         return (alpha_1.flatten(), alpha_2.flatten(), tau_1, tau_2, pi)
 
     def __repr__(self):
