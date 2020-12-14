@@ -11,7 +11,7 @@ import os
 import experiments.lbm_not_sparse
 import GPUtil
 
-gp = GPUtil.getGPUs()[1]
+gp = GPUtil.getGPUs()[0]
 mem_gpu = gp.memoryTotal
 gpu_index = gp.id
 
