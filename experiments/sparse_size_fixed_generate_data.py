@@ -57,5 +57,5 @@ for exponent in range(nbexpo):
             + ".pkl"
         )
         pickle.dump(
-            dataset, open("./experiments/data/sparsity/" + fname, "wb")
+            dataset, open("./experiments/data/size_fixed/" + fname, "wb")
         )

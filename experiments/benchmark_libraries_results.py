@@ -96,8 +96,8 @@ ax.plot(
     label="SparseBM CPU time",
 )
 ax.plot(
-    res_sp_gpu[:-2, 0] * res_sp_gpu[:-2, 1],
-    res_sp_gpu[:-2, 2],
+    res_sp_gpu[:, 0] * res_sp_gpu[:, 1],
+    res_sp_gpu[:, 2],
     marker=".",
     markersize=7,
     linewidth=0.5,
@@ -136,5 +136,5 @@ ax.annotate(
 ax.set_ylabel("Time in seconds")
 ax.set_xlabel("Network size $(n_1 \cdot n_2)$")
 ax.ticklabel_format(style="sci", axis="x")
-# plt.legend()
+plt.legend()
 plt.show()

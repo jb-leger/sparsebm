@@ -10,7 +10,7 @@ import matplotlib.colors as mcolors
 from matplotlib.ticker import FormatStrFormatter
 import matplotlib.ticker as mtick
 
-dataset_files = glob.glob("./experiments/results/sparsity/*.pkl")
+dataset_files = glob.glob("./experiments/results/size_fixed/*.pkl")
 
 from collections import defaultdict
 
@@ -31,7 +31,6 @@ for file in dataset_files:
     )
 
 xs = np.sort(np.array(list(time_results_sparse.keys())))
-xs = xs[:7]
 
 ############################ PLOTTING bayes error and Classification error ########################
 def epsilon_to_rate(x):
@@ -100,7 +99,7 @@ ax.set_ylabel("Execution time (sec.)", size=12)
 
 ax.set_xlabel("sparsity rate", size=12)
 ax.set_xlim(0 + 1e-6, xs_values.max() + 0.02)
-ax.set_xticks(xs_values[:-2])
+# ax.set_xticks(xs_values[:-2]) # uncomment if display issues.
 ax.xaxis.set_major_formatter(FormatStrFormatter("%.2f"))
 secax = ax.secondary_xaxis("top", functions=(rate_to_epsilon, epsilon_to_rate))
 secax.set_xlabel("$\epsilon$")

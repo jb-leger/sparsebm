@@ -46,9 +46,9 @@ for file in dataset_files:
 xs = sorted(list(time_results_sparse.keys()), key=lambda x: x[0])
 
 fig, ax = plt.subplots(1, 1, figsize=(7, 4))
-xs_values = [a * a / 2 for a in np.array([a[0] for a in xs])]
 ax.spines["right"].set_visible(False)
 ax.spines["top"].set_visible(False)
+xs_values = [a * a / 2 for a in np.array([a[0] for a in xs])]
 ax.plot(
     xs_values,
     [np.median(time_results_sparse[x]) for x in xs],
@@ -57,9 +57,18 @@ ax.plot(
     linewidth=0.5,
     color=mcolors.TABLEAU_COLORS["tab:green"],
 )
+xs_value_not_sparse = [
+    a * a / 2
+    for a in np.array(
+        [a[0] for a in sorted(list(time_results_not_sparse.keys()))]
+    )
+]
 ax.plot(
-    xs_values[:8],
-    [np.median(time_results_not_sparse[x]) for x in xs[:8]],
+    xs_value_not_sparse,
+    [
+        np.median(time_results_not_sparse[x])
+        for x in sorted(list(time_results_not_sparse.keys()))
+    ],
     marker="*",
     markersize=7,
     linewidth=0.5,
@@ -67,7 +76,15 @@ ax.plot(
 )
 ax.annotate(
     "OOM",
-    (xs_values[7], 50 + np.median(time_results_not_sparse[xs[7]])),
+    (
+        xs_value_not_sparse[-1],
+        10
+        + np.median(
+            time_results_not_sparse[
+                sorted(list(time_results_not_sparse.keys()))[-1]
+            ]
+        ),
+    ),
     color=mcolors.TABLEAU_COLORS["tab:blue"],
 )
 ax.set_ylabel("Execution time (sec.)")

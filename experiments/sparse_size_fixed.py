@@ -15,31 +15,7 @@ gp = GPUtil.getGPUs()[1]
 mem_gpu = gp.memoryTotal
 gpu_index = gp.id
 
-if mem_gpu > 22000:
-    limit_size_accepted_by_gpu = 10000
-    limit_size_accepted_by_gpu_sparse = 80000
-elif mem_gpu > 8000:
-    limit_size_accepted_by_gpu_sparse = 40000
-    limit_size_accepted_by_gpu = 5000
-elif mem_gpu > 4000:
-    limit_size_accepted_by_gpu_sparse = 40000
-    limit_size_accepted_by_gpu = 3000
-
-
-f_prefix = [
-    "500_250",
-    "1000_500",
-    "1500_750",
-    "2000_1000",
-    "2500_1250",
-    "3000_1500",
-    "5000_2500",
-    "10000_5000",
-    "15000_7500",
-    "20000_10000",
-    "40000_20000",
-    "80000_40000",
-]
+f_prefix = ["10000_5000_" + str(i) for i in range(7)]
 
 nb_row_clusters, nb_column_clusters = 3, 4
 n_init = 100  # Specifying the number of initializations to perform.
@@ -54,15 +30,15 @@ n_init_total_run = (
 def train_with_both_model(dataset_file, gpu_index, not_sparse):
     if not os.path.exists("./experiments/results"):
         os.makedirs("./experiments/results")
-    if not os.path.exists("./experiments/results/sparsity_fixed"):
-        os.makedirs("./experiments/results/sparsity_fixed")
+    if not os.path.exists("./experiments/results/size_fixed"):
+        os.makedirs("./experiments/results/size_fixed")
     print(dataset_file)
 
     results_files_already_done = glob.glob(
-        "./experiments/results/sparsity_fixed/*.pkl"
+        "./experiments/results/size_fixed/*.pkl"
     )
     if (
-        "./experiments/results/sparsity_fixed/" + dataset_file.split("/")[-1]
+        "./experiments/results/size_fixed/" + dataset_file.split("/")[-1]
         in results_files_already_done
     ):
         print("Already Done")
@@ -181,21 +157,14 @@ def train_with_both_model(dataset_file, gpu_index, not_sparse):
     pickle.dump(
         results,
         open(
-            "./experiments/results/sparsity_fixed/"
-            + dataset_file.split("/")[-1],
+            "./experiments/results/size_fixed/" + dataset_file.split("/")[-1],
             "wb",
         ),
     )
 
 
 for f in f_prefix:
-    dataset_files = glob.glob(
-        "./experiments/data/sparsity_fixed/" + f + "_*.pkl"
-    )
-    if (
-        int(f.split("_")[0]) > limit_size_accepted_by_gpu_sparse
-    ):  # Preserve GPU OOM
-        continue
+    dataset_files = glob.glob("./experiments/data/size_fixed/" + f + "_*.pkl")
     not_sparse = (
         True if int(f.split("_")[0]) <= limit_size_accepted_by_gpu else False
     )  # Preserve GPU OOM

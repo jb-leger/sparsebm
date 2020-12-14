@@ -13,6 +13,9 @@ from time import time as timestamp
 import glob
 import pickle
 import argparse
+import psutil
+
+user_memory = psutil.virtual_memory().total
 
 try:
     import cupy
@@ -36,8 +39,8 @@ parser.add_argument(
     "--size",
     type=int,
     help="Limit size of graph (first dimension). Exemple: 1000",
-    required=True,
-    default=np.inf,
+    required=False,
+    default=None,
 )
 
 parser.add_argument(
@@ -63,6 +66,24 @@ args = vars(parser.parse_args())
 use_sp = True if "sparsebm" in args["programs"] else False
 use_bm = True if "blockmodels" in args["programs"] else False
 use_bc = True if "blockcluster" in args["programs"] else False
+
+if user_memory >= (16 * 10 ** 9):
+    sparsebm_size_limit = 80000
+    blockmodels_size_limit = 10000
+    blockcluster_size_limit = 20000
+elif user_memory >= (8 * 10 ** 9):
+    sparsebm_size_limit = 40000
+    blockmodels_size_limit = 5000
+    blockcluster_size_limit = 15000
+else:
+    sparsebm_size_limit = 40000
+    blockmodels_size_limit = 5000
+    blockcluster_size_limit = 10000
+
+if "size" in args and args["size"]:
+    sparsebm_size_limit = args["size"]
+    blockmodels_size_limit = args["size"]
+    blockcluster_size_limit = args["size"]
 
 
 if args["use_gpu"]:
@@ -99,14 +120,12 @@ f_prefix_list = [
 ]
 
 dataset_files = [
-    glob.glob("./experiments/data/sparsity_fixed/" + f_prefix + "_*.pkl")
+    (
+        int(f_prefix.split("_")[0]),
+        glob.glob("./experiments/data/sparsity_fixed/" + f_prefix + "_*.pkl"),
+    )
     for f_prefix in f_prefix_list
-    if int(f_prefix.split("_")[0]) <= args["size"]
 ]
-
-dataset_files = [b for a in dataset_files for b in a]
-dataset_files = np.array(dataset_files)
-np.random.shuffle(dataset_files)
 
 
 results_folder = "./experiments/results/benchmark_libraries/size_growing/"
@@ -302,14 +321,6 @@ def train_with_blockcluster(
     # nbinititerations : Number of Global iterations used in initialization step. Default value is 10.
     # initepsilon : Tolerance value used while initialization. Default value is 1e-2.
     # nbxem : Number of xem steps. Default value is 5.
-    # strategy = blockcluster.coclusterStrategy(
-    #     initmethod="randomInit",
-    #     nbinitmax=100,
-    #     nbinititerations=10,
-    #     nbiterationsXEM=5000,
-    #     initepsilon=1e-2,
-    #     stopcriteria='Likelihood',
-    # )
     strategy = blockcluster.coclusterStrategy(
         initmethod="randomInit",
         nbinitmax=100,
@@ -317,7 +328,6 @@ def train_with_blockcluster(
         nbiterationsXEM=5000,
         nbiterationsxem=10,
         initepsilon=1e-2,
-        # epsilon_int=1e-10,
         epsilonxem=1e-4,
         epsilonXEM=1e-10,
         stopcriteria="Likelihood",
@@ -371,46 +381,55 @@ def train_with_blockcluster(
     return results
 
 
-for dataset_file in dataset_files:
-    print("Start processing ", dataset_file.split("/")[-1])
-    dataset = pickle.load(open(dataset_file, "rb"))
+try:
+    for s, files in dataset_files:
+        for dataset_file in files:
+            print("Start processing ", dataset_file.split("/")[-1])
+            dataset = pickle.load(open(dataset_file, "rb"))
 
-    graph = dataset["data"]
-    row_cluster_indicator = dataset["row_cluster_indicator"]
-    column_cluster_indicator = dataset["column_cluster_indicator"]
-    row_clusters_index = row_cluster_indicator.argmax(1)
-    column_clusters_index = column_cluster_indicator.argmax(1)
-    nb_row_clusters, nb_column_clusters = (
-        row_cluster_indicator.shape[1],
-        column_cluster_indicator.shape[1],
-    )
+            graph = dataset["data"]
+            row_cluster_indicator = dataset["row_cluster_indicator"]
+            column_cluster_indicator = dataset["column_cluster_indicator"]
+            row_clusters_index = row_cluster_indicator.argmax(1)
+            column_clusters_index = column_cluster_indicator.argmax(1)
+            nb_row_clusters, nb_column_clusters = (
+                row_cluster_indicator.shape[1],
+                column_cluster_indicator.shape[1],
+            )
 
-    if use_sp:
-        train_with_sparsebm(
-            dataset_file,
-            graph,
-            nb_row_clusters,
-            nb_column_clusters,
-            row_clusters_index,
-            column_clusters_index,
-            use_gpu,
-            args["gpu_index"],
-        )
-    if use_bm:
-        train_with_blockmodels(
-            dataset_file,
-            graph,
-            nb_row_clusters,
-            nb_column_clusters,
-            row_clusters_index,
-            column_clusters_index,
-        )
-    if use_bc:
-        train_with_blockcluster(
-            dataset_file,
-            graph,
-            nb_row_clusters,
-            nb_column_clusters,
-            row_clusters_index,
-            column_clusters_index,
-        )
+            if use_sp:
+                train_with_sparsebm(
+                    dataset_file,
+                    graph,
+                    nb_row_clusters,
+                    nb_column_clusters,
+                    row_clusters_index,
+                    column_clusters_index,
+                    use_gpu,
+                    args["gpu_index"],
+                )
+                print("done")
+            if use_bm and s <= blockmodels_size_limit:
+                train_with_blockmodels(
+                    dataset_file,
+                    graph,
+                    nb_row_clusters,
+                    nb_column_clusters,
+                    row_clusters_index,
+                    column_clusters_index,
+                )
+                print("done")
+            if use_bc and s <= blockcluster_size_limit:
+                train_with_blockcluster(
+                    dataset_file,
+                    graph,
+                    nb_row_clusters,
+                    nb_column_clusters,
+                    row_clusters_index,
+                    column_clusters_index,
+                )
+                print("done")
+except KeyboardInterrupt:
+    pass
+finally:
+    print("Experiments finished")
