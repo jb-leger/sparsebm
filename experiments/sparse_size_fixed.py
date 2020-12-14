@@ -165,10 +165,7 @@ def train_with_both_model(dataset_file, gpu_index, not_sparse):
 
 for f in f_prefix:
     dataset_files = glob.glob("./experiments/data/size_fixed/" + f + "_*.pkl")
-    not_sparse = (
-        True if int(f.split("_")[0]) <= limit_size_accepted_by_gpu else False
-    )  # Preserve GPU OOM
     for dataset_file in dataset_files:
-        train_with_both_model(dataset_file, gpu_index, not_sparse)
+        train_with_both_model(dataset_file, gpu_index, True)
 
 exit()

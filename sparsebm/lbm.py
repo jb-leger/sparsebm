@@ -22,23 +22,7 @@ except ImportError:
 class LBM(BaseEstimator):
     """
     LBM with distribution.
-
-    Attributes
-    ----------
-    max_iter : int
-        Maximum number of EM iterations
-    n_init : int
-        Number of initializations that will be run for n_iter_early_stop EM iterations.
-    n_init_total_run : int
-        Number of the n_init best initializations that will be run until convergence.
-    nb_iter_early_stop : int
-        Number of EM iterations to used to run the n_init initializations.
-    rtol : float, default 1e-10
-        The relative tolerance parameter (see Notes).
-    atol : float, default 1e-4
-        The absolute tolerance parameter (see Notes).
-    verbosity : int
-        Degree of verbosity. Scale from 0 (no message displayed) to 3.
+    The class implements the random initialisation strategy.
 
     Notes
     -----
@@ -46,6 +30,20 @@ class LBM(BaseEstimator):
     new_loglikelihood - old_loglikelihood <=
     (`atol` + `rtol` * abs(new_loglikelihood)). The convergence is checked
     every 10 EM steps.
+
+
+    Examples
+    --------
+    >>> from sparsebm import LBM
+    >>> model = LBM(
+    ...     nb_row_clusters=4,
+    ...     nb_column_clusters=4,
+    ...     n_init=100,
+    ...     n_iter_early_stop=10,
+    ...     n_init_total_run=5,
+    ...     verbosity=1,
+    ... )
+    >>> model.fit(graph)
     """
 
     def __init__(

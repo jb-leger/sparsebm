@@ -38,6 +38,7 @@ assert (
     == connection_probabilities.shape[1]
 )
 
+
 # Generate The dataset.
 dataset = generate_SBM_dataset(
     number_of_nodes,

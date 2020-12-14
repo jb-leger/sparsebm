@@ -3,6 +3,26 @@ import sparsebm
 from sparsebm import generate_LBM_dataset, ModelSelection
 from sparsebm.utils import reorder_rows, ARI, CARI
 import scipy.sparse as ss
+import argparse
+import os
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "-r",
+    "--repeat",
+    type=int,
+    help="Number of arrays for each dimension to be generated.",
+    required=False,
+    default=100,
+)
+args = vars(parser.parse_args())
+nbtt = args["repeat"]
+
+if not os.path.exists("./experiments/data"):
+    os.makedirs("./experiments/data")
+if not os.path.exists("./experiments/data/size_fixed"):
+    os.makedirs("./experiments/data/size_fixed")
+
 
 ###
 ### Specifying the parameters of the dataset to generate.
@@ -31,7 +51,6 @@ import pickle
 nbexpo = 7
 for exponent in range(nbexpo):
     print("exponent {}/{}".format(exponent, nbexpo))
-    nbtt = 100
     for i in range(nbtt):
         print("Generate dataset {}/{}".format(i, nbtt))
         dataset = generate_LBM_dataset(

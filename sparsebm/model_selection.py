@@ -28,6 +28,14 @@ class ModelSelection:
     Explore and select the optimal number of classes for the LBM or SBM model.
     The best model is chosen according to the Integrated Completed Likelihood.
     A strategy of merging and splitting classes to produce good initializations is used.
+
+    Examples
+    --------
+    >>> lbm_model_selection = ModelSelection(
+    ...     model_type="LBM",
+    ...     plot=True,
+    ... )
+    >>> lbm_selected = lbm_model_selection.fit(graph)
     """
 
     def __init__(

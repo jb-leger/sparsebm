@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import rc
 
-rc("text", usetex=True)
+# rc("text", usetex=True)
 import matplotlib.pyplot as plt
 import glob
 import pickle
@@ -106,3 +106,5 @@ secax.set_xlabel("$\epsilon$")
 secax.set_xticks(rate_to_epsilon(xs_values))
 
 plt.show()
+fig.savefig("experiments/results/size_fixed.png")
+print("Figure saved in " + "experiments/results/size_fixed.png")

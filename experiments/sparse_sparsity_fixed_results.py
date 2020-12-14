@@ -1,10 +1,11 @@
 from matplotlib import rc
 
-rc("text", usetex=True)
+# rc("text", usetex=True)
 import matplotlib
 
-font = {"size": 14}
-matplotlib.rc("font", **font)
+# font = {"size": 14}
+# matplotlib.rc("font", **font)
+
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -74,20 +75,22 @@ ax.plot(
     linewidth=0.5,
     color=mcolors.TABLEAU_COLORS["tab:blue"],
 )
-ax.annotate(
-    "OOM",
-    (
-        xs_value_not_sparse[-1],
-        10
-        + np.median(
-            time_results_not_sparse[
-                sorted(list(time_results_not_sparse.keys()))[-1]
-            ]
-        ),
-    ),
-    color=mcolors.TABLEAU_COLORS["tab:blue"],
-)
+# ax.annotate(
+#     "OOM",
+#     (
+#         xs_value_not_sparse[-1],
+#         10
+#         + np.median(
+#             time_results_not_sparse[
+#                 sorted(list(time_results_not_sparse.keys()))[-1]
+#             ]
+#         ),
+#     ),
+#     color=mcolors.TABLEAU_COLORS["tab:blue"],
+# )
 ax.set_ylabel("Execution time (sec.)")
 ax.set_xlabel("Network size $(n_1 \cdot n_2)$")
 ax.ticklabel_format(style="sci", axis="x")
 plt.show()
+fig.savefig("experiments/results/sparsity_fixed.png")
+print("Figure saved in " + "experiments/results/sparsity_fixed.png")

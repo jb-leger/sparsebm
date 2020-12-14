@@ -22,31 +22,32 @@ except ImportError:
 
 class SBM(BaseEstimator):
     """
-    SBM with bernoulli distribution.
-
-    Attributes
-    ----------
-    max_iter : int
-        Maximum number of EM iterations
-    n_init : int
-        Number of initializations that will be run for n_iter_early_stop EM iterations.
-    n_init_total_run : int
-        Number of the n_init best initializations that will be run until convergence.
-    n_iter_early_stop : int
-        Number of EM iterations to used to run the n_init initializations.
-    rtol : float, default 1e-10
-        The relative tolerance parameter (see Notes).
-    atol : float, default 1e-4
-        The absolute tolerance parameter (see Notes).
-    verbosity : int
-        Degree of verbosity. Scale from 0 (no message displayed) to 3.
+    SBM with bernoulli distribution. The class implements the random
+    initialisation strategy.
 
     Notes
     -----
     Convergence of the EM algorithm is declared when
     new_loglikelihood - old_loglikelihood <=
     (`atol` + `rtol` * absolute(new_loglikelihood)). The convergence is checked
-    every 10 EM steps.
+    every 5 EM steps.
+
+    Examples
+    --------
+    >>> from sparsebm import SBM
+    >>> model = SBM(
+    ...     n_clusters=4,
+    ...     max_iter=10000,
+    ...     n_init=100,
+    ...     n_init_total_run=10,
+    ...     n_iter_early_stop=10,
+    ...     rtol=1e-10,
+    ...     atol=1e-4,
+    ...     verbosity=1,
+    ...     use_gpu=True,
+    ...     gpu_index=0,
+    ... )
+    >>> model.fit(graph)
     """
 
     def __init__(
