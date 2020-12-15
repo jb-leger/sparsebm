@@ -12,6 +12,9 @@ from sparsebm import (
     generate_SBM_dataset,
 )
 from sparsebm.utils import reorder_rows, ARI
+import logging
+
+logger = logging.getLogger(__name__)
 
 try:
     import cupy
@@ -272,7 +275,7 @@ def graph_from_csv(file, type, sep=","):
             )
             return graph, i_mapping, j_mapping
     except Exception as e:
-        print(e)
+        logger.error(e)
         raise e
 
 
@@ -303,14 +306,16 @@ def process_sbm(args):
         gpu_index=args["gpu_index"],
     )
     symmetric = str2bool(args["symmetric"])
-    print("Runing with symmetric adjacency matrix : {}".format(symmetric))
+    logger.info(
+        "Runing with symmetric adjacency matrix : {}".format(symmetric)
+    )
     model.fit(graph, symmetric=symmetric)
 
     if not model.trained_successfully:
-        print("FAILED, model has not been trained successfully.")
+        logger.error("FAILED, model has not been trained successfully.")
         return None
-    print("Model has been trained successfully.")
-    print(
+    logger.info("Model has been trained successfully.")
+    logger.info(
         "Value of the Integrated Completed Loglikelihood is {:.4f}".format(
             model.get_ICL()
         )
@@ -331,7 +336,7 @@ def process_sbm(args):
 
     with open(args["output"], "w") as outfile:
         json.dump(results, outfile)
-    print("Results saved in {}".format(args["output"]))
+    logger.info("Results saved in {}".format(args["output"]))
 
 
 def process_lbm(args):
@@ -353,10 +358,10 @@ def process_lbm(args):
     model.fit(graph)
 
     if not model.trained_successfully:
-        print("FAILED, model has not been trained successfully.")
+        logger.error("FAILED, model has not been trained successfully.")
         return None
-    print("Model has been trained successfully.")
-    print(
+    logger.info("Model has been trained successfully.")
+    logger.info(
         "Value of the Integrated Completed Loglikelihood is {:.4f}".format(
             model.get_ICL()
         )
@@ -389,7 +394,7 @@ def process_lbm(args):
 
     with open(args["output"], "w") as outfile:
         json.dump(results, outfile)
-    print("Results saved in {}".format(args["output"]))
+    logger.info("Results saved in {}".format(args["output"]))
 
 
 def generate_sbm(args):
@@ -448,9 +453,9 @@ def generate_sbm(args):
     file_edges = "./edges.csv"
     with open(file_groups, "w") as outfile:
         json.dump(results, outfile)
-    print("\n Groups and params saved in {}".format(file_groups))
+    logger.info("\n Groups and params saved in {}".format(file_groups))
     np.savetxt(file_edges, graph, delimiter=",")
-    print("Edges saved in {}".format(file_edges))
+    logger.info("Edges saved in {}".format(file_edges))
 
 
 def generate_lbm(args):
@@ -535,9 +540,9 @@ def generate_lbm(args):
     file_edges = "./edges.csv"
     with open(file_groups, "w") as outfile:
         json.dump(results, outfile)
-    print("\nGroups and params saved in {}".format(file_groups))
+    logger.info("\nGroups and params saved in {}".format(file_groups))
     np.savetxt(file_edges, graph, delimiter=",")
-    print("Edges saved in {}".format(file_edges))
+    logger.info("Edges saved in {}".format(file_edges))
 
 
 def process_model_selection(args):
@@ -557,21 +562,21 @@ def process_model_selection(args):
     model = model_selection.fit(graph, symmetric=args["symmetric"])
 
     if not model.trained_successfully:
-        print("FAILED, model has not been trained successfully.")
+        logger.error("FAILED, model has not been trained successfully.")
         return None
-    print("Model has been trained successfully.")
-    print(
+    logger.info("Model has been trained successfully.")
+    logger.info(
         "Value of the Integrated Completed Loglikelihood is {:.4f}".format(
             model.get_ICL()
         )
     )
     if args["type"] == "lbm":
-        print(
+        logger.info(
             "The model selection picked {} row classes".format(
                 model.n_row_clusters
             )
         )
-        print(
+        logger.info(
             "The model selection picked {} column classes".format(
                 model.n_column_clusters
             )
@@ -609,7 +614,9 @@ def process_model_selection(args):
             "node_type_2_ids_clustered": col_groups,
         }
     else:
-        print("The model selection picked {} classes".format(model.n_clusters))
+        logger.info(
+            "The model selection picked {} classes".format(model.n_clusters)
+        )
         nb_clusters = model.n_clusters
         labels = model.labels
         groups = [
@@ -628,7 +635,7 @@ def process_model_selection(args):
 
     with open(args["output"], "w") as outfile:
         json.dump(results, outfile)
-    print("Results saved in {}".format(args["output"]))
+    logger.info("Results saved in {}".format(args["output"]))
 
 
 def main():

@@ -3,6 +3,9 @@ import scipy as sp
 import scipy.sparse
 import progressbar
 from typing import Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def generate_LBM_dataset(
@@ -104,7 +107,7 @@ def generate_LBM_dataset(
 
     try:
         if verbosity > 0:
-            print("---------- START Graph Generation ---------- ")
+            logger.info("---------- START Graph Generation ---------- ")
             bar = progressbar.ProgressBar(
                 max_value=nb_row_clusters * nb_column_clusters,
                 widgets=[
@@ -278,7 +281,7 @@ def generate_SBM_dataset(
 
     try:
         if verbosity > 0:
-            print("---------- START Graph Generation ---------- ")
+            logger.info("---------- START Graph Generation ---------- ")
             bar = progressbar.ProgressBar(
                 max_value=number_of_clusters ** 2,
                 widgets=[

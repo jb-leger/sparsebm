@@ -10,6 +10,9 @@ from .utils import (
 from typing import Any, Tuple, Union, Optional
 from scipy.sparse import spmatrix
 import scipy.sparse as sp
+import logging
+
+logger = logging.getLogger(__name__)
 
 try:
     import cupy
@@ -165,13 +168,13 @@ class ModelSelection:
                     for m in self.model_explored.values()
                 ]
             ):
-                print("Spliting")
+                logger.info("Spliting")
                 self.model_explored = self._explore_strategy(strategy="split")
-                print("Merging")
+                logger.info("Merging")
                 self.model_explored = self._explore_strategy(strategy="merge")
                 best_iter_model = self.selected_model
                 best_icl.append(best_iter_model.get_ICL())
-                print("Best icl is {:.4f}".format(best_icl[-1]))
+                logger.info("Best icl is {:.4f}".format(best_icl[-1]))
                 if len(best_icl) > 3 and best_icl[-3] == best_icl[-1]:
                     break
         except KeyboardInterrupt:
@@ -270,14 +273,14 @@ class ModelSelection:
                             else best_model["model"].n_clusters
                         )
 
-                    print(
+                    logger.info(
                         "\t Already explored models from {} classes".format(
                             nnq
                         )
                     )
                     continue
             model_flag[flag_key] = True
-            print("\t Explore models from {} classes".format(nnq))
+            logger.info("\t Explore models from {} classes".format(nnq))
 
             if self._model_type == "LBM":
                 # Explore all models derived from the strategy on the rows.

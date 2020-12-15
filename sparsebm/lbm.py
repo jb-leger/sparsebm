@@ -6,6 +6,9 @@ import scipy.sparse as sp
 from heapq import heappush, heappushpop
 from itertools import count
 from sklearn.base import BaseEstimator
+import logging
+
+logger = logging.getLogger(__name__)
 
 try:
     import cupy
@@ -193,9 +196,8 @@ class LBM(BaseEstimator):
         ):
             self.gpu_number = None
             self.use_gpu = False
-            print(
-                "GPU not used as cupy library seems not to be installed or CUDA is not available",
-                file=sys.stderr,
+            logger.warning(
+                "GPU not used as cupy library seems not to be installed or CUDA is not available"
             )
 
         if (
@@ -212,7 +214,7 @@ class LBM(BaseEstimator):
                 free_idx = GPUtil.getAvailable("memory", limit=10)
                 if not free_idx:
                     self.use_gpu = False
-                    print("GPU not used as no gpu is free", file=sys.stderr)
+                    logger.warning("GPU not used as no gpu is free")
                 else:
                     self._np = cupy
                     self._cupyx = cupyx
@@ -268,7 +270,9 @@ class LBM(BaseEstimator):
             # Initialize and start to run each for a while.
 
             if self.verbosity > 0:
-                print("---------- START RANDOM INITIALIZATIONS ---------- ")
+                logger.info(
+                    "---------- START RANDOM INITIALIZATIONS ---------- "
+                )
                 bar = progressbar.ProgressBar(
                     max_value=self.n_init,
                     widgets=[
@@ -321,7 +325,7 @@ class LBM(BaseEstimator):
                     heappushpop(best_inits, calculation_result)
             if self.verbosity > 0:
                 bar.finish()
-                print(
+                logger.info(
                     "---------- START TRAINING BEST INITIALIZATIONS ---------- "
                 )
                 bar = progressbar.ProgressBar(
@@ -446,11 +450,12 @@ class LBM(BaseEstimator):
                 if (ll - old_ll) < (self.atol + self.rtol * self._np.abs(ll)):
                     success = True
                     break
-                if self.verbosity > 2:
 
-                    print(
-                        f"\t EM Iter: {iteration:5d}  \t  log-like:{ll.get() if self.use_gpu else ll:.4f} \t diff:{self._np.abs(old_ll - ll).get() if self.use_gpu else self._np.abs(old_ll - ll):.6f}"
-                    )
+                log_txt = f"\t EM Iter: {iteration:5d}  \t  log-like:{ll.get() if self.use_gpu else ll:.4f} \t diff:{self._np.abs(old_ll - ll).get() if self.use_gpu else self._np.abs(old_ll - ll):.6f}"
+                if self.verbosity > 1:
+                    logger.info(log_txt)
+                else:
+                    logger.debug(log_txt)
                 old_ll = ll
             pi, alpha_1, alpha_2, tau_1, tau_2 = self._step_EM(
                 X, indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2, n1, n2
@@ -458,7 +463,7 @@ class LBM(BaseEstimator):
         else:
             success = True
         if self.verbosity > 1 and run_number:
-            print(
+            logger.info(
                 f"Run {run_number:3d} / {self.n_init:3d} \t success : {success} \t log-like: {ll.get()  if self.use_gpu else ll:.4f} \t nb_iter: {iteration:5d}"
             )
 

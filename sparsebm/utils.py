@@ -4,6 +4,9 @@ from . import LBM, SBM
 from typing import Tuple, Union, Optional
 from scipy.sparse import coo_matrix
 from scipy.special import comb
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def ARI(
@@ -235,7 +238,7 @@ def lbm_merge_group(
         The ICL value and the model obtained from the merge of two classes.
     """
     if type != 0 and type != 1:
-        print("Type error in merge group")
+        logger.error("Type error in merge group")
         assert False
     eps = 1e-4
     if type == 0:
@@ -374,7 +377,7 @@ def lbm_split_group(
         The ICL value and the model obtained from the split of the specified class.
     """
     if type != 0 and type != 1:
-        print("Type error in split group")
+        logger.error("Type error in split group")
         assert False
     eps = 1e-4
     if type == 0:
