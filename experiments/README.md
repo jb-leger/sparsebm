@@ -66,7 +66,7 @@ python experiments/sparse_sparsity_fixed_generate_data.py
 ```
 If you want to experiment on more or less repetitions use argument repeat:
 ```
-python experiments/sparse_size_fixed_generate_data.py --repeat 1
+python experiments/sparse_sparsity_fixed_generate_data.py --repeat 1
 ```
 
 2. :warning: To execute this experiment, **[R must be installed](https://cran.r-project.org/bin/linux/ubuntu/README.html)** as well as the **[blockcluster](https://cran.r-project.org/web/packages/blockcluster/index.html)** and **[blockmodels](https://cran.r-project.org/web/packages/blockmodels/index.html)** packages.

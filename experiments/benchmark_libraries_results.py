@@ -1,6 +1,6 @@
 from matplotlib import rc
 
-rc("text", usetex=True)
+# rc("text", usetex=True)
 import pickle
 import glob
 from collections import defaultdict
@@ -40,18 +40,18 @@ res_sp = np.array(
 )
 res_sp = np.sort(res_sp, 0)
 
-res_sp_gpu = np.array(
-    [
-        [
-            k[0],
-            k[1],
-            np.median([v["real"] for v in vs]),
-            np.median([v["cari"] for v in vs]),
-        ]
-        for k, vs in sp_lib_gpu.items()
-    ]
-)
-res_sp_gpu = np.sort(res_sp_gpu, 0)
+# res_sp_gpu = np.array(
+#     [
+#         [
+#             k[0],
+#             k[1],
+#             np.median([v["real"] for v in vs]),
+#             np.median([v["cari"] for v in vs]),
+#         ]
+#         for k, vs in sp_lib_gpu.items()
+#     ]
+# )
+# res_sp_gpu = np.sort(res_sp_gpu, 0)
 
 bm_res = np.array(
     [
@@ -95,15 +95,15 @@ ax.plot(
     color=mcolors.TABLEAU_COLORS["tab:green"],
     label="SparseBM CPU time",
 )
-ax.plot(
-    res_sp_gpu[:, 0] * res_sp_gpu[:, 1],
-    res_sp_gpu[:, 2],
-    marker=".",
-    markersize=7,
-    linewidth=0.5,
-    color=mcolors.TABLEAU_COLORS["tab:green"],
-    label="SparseBM GPU effective time",
-)
+# ax.plot(
+#     res_sp_gpu[:, 0] * res_sp_gpu[:, 1],
+#     res_sp_gpu[:, 2],
+#     marker=".",
+#     markersize=7,
+#     linewidth=0.5,
+#     color=mcolors.TABLEAU_COLORS["tab:green"],
+#     label="SparseBM GPU effective time",
+# )
 ax.plot(
     bm_res[:, 0] * bm_res[:, 1],
     bm_res[:, 2],
@@ -113,11 +113,11 @@ ax.plot(
     color=mcolors.TABLEAU_COLORS["tab:blue"],
     label="Blockmodels CPU time",
 )
-ax.annotate(
-    "OOM",
-    (-0.05 * 10 ** 8 + bm_res[-1, 0] * bm_res[-1, 1], 80 + bm_res[-1, 2]),
-    color=mcolors.TABLEAU_COLORS["tab:blue"],
-)
+# ax.annotate(
+#     "OOM",
+#     (-0.05 * 10 ** 8 + bm_res[-1, 0] * bm_res[-1, 1], 80 + bm_res[-1, 2]),
+#     color=mcolors.TABLEAU_COLORS["tab:blue"],
+# )
 ax.plot(
     bc_res[:, 0] * bc_res[:, 1],
     bc_res[:, 2],
@@ -127,11 +127,11 @@ ax.plot(
     color=mcolors.TABLEAU_COLORS["tab:red"],
     label="Blockcluster CPU time",
 )
-ax.annotate(
-    "OOM",
-    (-0.05 * 10 ** 8 + bc_res[-1, 0] * bc_res[-1, 1], 50 + bc_res[-1, 2]),
-    color=mcolors.TABLEAU_COLORS["tab:red"],
-)
+# ax.annotate(
+#     "OOM",
+#     (-0.05 * 10 ** 8 + bc_res[-1, 0] * bc_res[-1, 1], 50 + bc_res[-1, 2]),
+#     color=mcolors.TABLEAU_COLORS["tab:red"],
+# )
 
 ax.set_ylabel("Time in seconds")
 ax.set_xlabel("Network size $(n_1 \cdot n_2)$")
