@@ -34,17 +34,17 @@ xs = np.sort(np.array(list(time_results_sparse.keys())))
 
 ############################ PLOTTING bayes error and Classification error ########################
 def epsilon_to_rate(x):
-    return (connection_probabilities).mean() / (2 ** x)
+    return 1 - (connection_probabilities).mean() / (2 ** x)
 
 
 def rate_to_epsilon(x):
-    eps = 1e-50
+    eps = 1e-10
     x2 = x.copy()
-    x2[x2 == 0] = eps
+    x2[x2 >= 1] = 1 - eps
     results = -(
-        np.log(x2) - np.log((connection_probabilities).mean())
+        np.log(1 - x2) - np.log((connection_probabilities).mean())
     ) / np.log(2)
-    results[x == 0] = 0
+    results[x >= 1] = xs.max()
     return results
 
 
@@ -98,8 +98,8 @@ bp = ax.boxplot(
 ax.set_ylabel("Execution time (sec.)", size=12)
 
 ax.set_xlabel("sparsity rate", size=12)
-ax.set_xlim(0 + 1e-6, xs_values.max() + 0.02)
-# ax.set_xticks(xs_values[:-2]) # uncomment if display issues.
+ax.set_xlim(xs_values.min() - 0.01, 1)
+ax.set_xticks(xs_values[:-2])  # uncomment if display issues.
 ax.xaxis.set_major_formatter(FormatStrFormatter("%.2f"))
 secax = ax.secondary_xaxis("top", functions=(rate_to_epsilon, epsilon_to_rate))
 secax.set_xlabel("$\epsilon$")
