@@ -99,7 +99,7 @@ ax.set_ylabel("Execution time (sec.)", size=12)
 
 ax.set_xlabel("sparsity rate", size=12)
 ax.set_xlim(xs_values.min() - 0.01, 1)
-ax.set_xticks(xs_values[:-2])  # uncomment if display issues.
+# ax.set_xticks(np.concatenate((xs_values[:-2], xs_values[-1:])))  # uncomment if display issues.
 ax.xaxis.set_major_formatter(FormatStrFormatter("%.2f"))
 secax = ax.secondary_xaxis("top", functions=(rate_to_epsilon, epsilon_to_rate))
 secax.set_xlabel("$\epsilon$")

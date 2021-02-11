@@ -102,7 +102,7 @@ ax.plot(
 #     markersize=7,
 #     linewidth=0.5,
 #     color=mcolors.TABLEAU_COLORS["tab:green"],
-#     label="SparseBM GPU effective time",
+#     label="SparseBM GPU elapsed real time",
 # )
 ax.plot(
     bm_res[:, 0] * bm_res[:, 1],
