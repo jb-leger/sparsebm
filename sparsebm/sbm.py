@@ -237,8 +237,10 @@ class SBM(BaseEstimator):
         assert n == n2, "Entry matrix is not squared"
         self._nb_rows = n
         X = sp.csr_matrix(X)
+        X_t = sp.csr_matrix(X.T)
         if self.use_gpu:
             X = self._cupyx.scipy.sparse.csr_matrix(X.astype(float))
+            X_t = self._cupyx.scipy.sparse.csr_matrix(X_t.astype(float))
             X_coo = X.tocoo()
             indices_ones = [X_coo.row, X_coo.col]
         else:
@@ -274,6 +276,7 @@ class SBM(BaseEstimator):
                     bar.update(run_number)
                 (success, ll, pi, alpha, tau) = self._fit_single(
                     X,
+                    X_t,
                     indices_ones,
                     n,
                     early_stop=self.n_iter_early_stop,
@@ -313,6 +316,7 @@ class SBM(BaseEstimator):
 
                 (success, ll, pi, alpha, tau) = self._fit_single(
                     X,
+                    X_t,
                     indices_ones,
                     n,
                     init_params=(pi, alpha, tau),
@@ -335,6 +339,7 @@ class SBM(BaseEstimator):
     def _fit_single(
         self,
         X,
+        X_t,
         indices_ones,
         n,
         early_stop=None,
@@ -389,7 +394,7 @@ class SBM(BaseEstimator):
                 else:
                     logger.debug(log_txt)
                 old_ll = ll
-            pi, alpha, tau = self._step_EM(X, indices_ones, pi, alpha, tau, n)
+            pi, alpha, tau = self._step_EM(X, X_t, indices_ones, pi, alpha, tau, n)
         else:
             success = True
         if self.verbosity > 1 and run_number:
@@ -406,7 +411,7 @@ class SBM(BaseEstimator):
 
         return success, ll, pi, alpha, tau
 
-    def _step_EM(self, X, indices_ones, pi, alpha, tau, n1):
+    def _step_EM(self, X, X_t, indices_ones, pi, alpha, tau, n1):
         """Realize EM step. Update both variationnal and model parameters.
 
         Parameters
@@ -424,15 +429,21 @@ class SBM(BaseEstimator):
 
         ########################## E-step  ##########################
         u = X.dot(tau)
+        v = X_t.dot(tau)
         # Update of tau_1 with sparsity trick.
         l_tau = (
             (
                 (u.reshape(n1, 1, nq))
                 * (self._np.log(pi) - self._np.log(1 - pi)).reshape(1, nq, nq)
             ).sum(2)
+            + ((v.reshape(n1, 1, nq))
+               * (np.log(pi.T) - np.log(1 - pi.T)).reshape(1, nq, nq)
+               ).sum(2)
             + self._np.log(alpha.reshape(1, nq))
             + tau.sum(0) @ np.log(1 - pi.T)
             - tau @ np.log(1 - pi.T)
+            + tau.sum(0) @ np.log(1 - pi)
+            - tau @ np.log(1 - pi)
         )
 
         # For computationnal stability reasons 1.
