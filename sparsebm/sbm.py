@@ -424,6 +424,7 @@ class SBM(BaseEstimator):
 
         ########################## E-step  ##########################
         u = X.dot(tau)
+
         # Update of tau_1 with sparsity trick.
         l_tau = (
             (
@@ -431,9 +432,20 @@ class SBM(BaseEstimator):
                 * (self._np.log(pi) - self._np.log(1 - pi)).reshape(1, nq, nq)
             ).sum(2)
             + self._np.log(alpha.reshape(1, nq))
-            + tau.sum(0) @ np.log(1 - pi.T)
-            - tau @ np.log(1 - pi.T)
+            + tau.sum(0) @ np.log(1 - pi)
+            - tau @ np.log(1 - pi)
         )
+        if self.symmetric == False:
+            X_t = X.transpose()
+            v = X_t.dot(tau)
+            l_tau += (
+                (
+                    (v.reshape(n1, 1, nq))
+                    * (np.log(pi.T) - np.log(1 - pi.T)).reshape(1, nq, nq)
+                ).sum(2)
+                + tau.sum(0) @ np.log(1 - pi.T)
+                - tau @ np.log(1 - pi.T)
+            )
 
         # For computationnal stability reasons 1.
         l_tau -= l_tau.max(axis=1).reshape(n1, 1)
