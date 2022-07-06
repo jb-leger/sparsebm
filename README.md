@@ -56,7 +56,7 @@ cluster_indicator = dataset["cluster_indicator"]
 
 - Infer with the Bernoulli Stochastic Bloc Model:
 
-```python
+    ```python
     from sparsebm import SBM
 
     number_of_clusters = cluster_indicator.shape[1]
