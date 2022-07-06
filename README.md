@@ -56,42 +56,42 @@ For users who do not have GPU, we recommend the free serverless Jupyter notebook
 
 - Infer with the Bernoulli Stochastic Bloc Model:
 
-```python
+    ```python
     from sparsebm import SBM
 
     number_of_clusters = cluster_indicator.shape[1]
 
-    # A number of classes must be specify. Otherwise see model selection.
+    # A number of classes must be specified. Otherwise see model selection.
     model = SBM(number_of_clusters)
     model.fit(graph, symmetric=True)
     print("Labels:", model.labels)
-```
+    ```
 
 - Compute performance:
 
-```python
+    ```python
     from sparsebm.utils import ARI
     ari = ARI(cluster_indicator.argmax(1), model.labels)
     print("Adjusted Rand index is {:.2f}".format(ari))
-```
+    ```
 
 
 ## Example with the Latent Block Model
 
 - Generate a synthetic graph for analysis with LBM:
 
-```python
+    ```python
     from sparsebm import generate_LBM_dataset
 
     dataset = generate_LBM_dataset()
     graph = dataset["data"]
     row_cluster_indicator = dataset["row_cluster_indicator"]
     column_cluster_indicator = dataset["column_cluster_indicator"]
-```
+    ```
 
  - Use the Bernoulli Latent Bloc Model:
 
-```python
+    ```python
     from sparsebm import LBM
 
     number_of_row_clusters = row_cluster_indicator.shape[1]
@@ -106,11 +106,11 @@ For users who do not have GPU, we recommend the free serverless Jupyter notebook
     model.fit(graph)
     print("Row Labels:", model.row_labels)
     print("Column Labels:", model.column_labels)
-```
+    ```
 
 - Compute performance:
 
-```python
+    ```python
     from sparsebm.utils import CARI
     cari = CARI(
         row_cluster_indicator.argmax(1),
@@ -119,4 +119,4 @@ For users who do not have GPU, we recommend the free serverless Jupyter notebook
         model.column_labels,
     )
     print("Co-Adjusted Rand index is {:.2f}".format(cari))
-```
+    ```
