@@ -1,16 +1,16 @@
 # Getting started with SparseBM
 
 SparseBM is a python module for handling sparse graphs with Block Models.
-The module is an implementation of the variational inference algorithm for the stochastic block model and the latent block model for sparse graphs, which leverages on the sparsity of edges to scale up to a very large number of nodes. The module can use [Cupy](https://cupy.dev/) to take advantage of the hardware speed up provided by graphics processing units (GPU).
+The module is an implementation of the variational inference algorithm for the Stochastic Block Model (SBM) and the Latent Block Model (LBM) for sparse graphs, which leverages the sparsity of edges to scale to very large numbers of nodes. The module can use [Cupy](https://cupy.dev/) to take advantage of the hardware acceleration provided by graphics processing units (GPU).
 
 ## Installing
 
-SparseBM module is distributed through the [PyPI repository](https://pypi.org/project/sparsebm/) and the documentation is available at [sparsebm.readthedocs.io](https://sparsebm.readthedocs.io/).
+The SparseBM module is distributed through the [PyPI repository](https://pypi.org/project/sparsebm/) and the documentation is available at [sparsebm.readthedocs.io](https://sparsebm.readthedocs.io/).
 
 
-### With gpu acceleration (recommended if a GPU is available)
+### With GPU acceleration (recommended if GPUs are available)
 
-This option is recommended if GPU are available to speedup computation.
+This option is recommended if GPUs are available to speedup computation.
 
 With the package installer pip:
 
@@ -30,20 +30,20 @@ pip3 install sparsebm
 pip3 install cupy
 ```
 
-### Without gpu acceleration
+### Without GPU acceleration
 
-Without GPU acceleration, only CPUs are used. The infererence process still use
-the sparcity, but not the GPU linear algebra operations.
+Without GPU acceleration, only CPUs are used. The infererence process still uses
+sparsity, but no GPU linear algebra operations.
 
 ```
 pip3 install sparsebm
 ```
 
-For users that do not have GPU, we advise the free serverless Jupyter notebook environment provided by [Google Colab](https://colab.research.google.com/) where the Cupy module is already installed and ready to use with one GPU.
+For users who do not have GPU, we recommend the free serverless Jupyter notebook environment provided by [Google Colab](https://colab.research.google.com/) where the Cupy module is already installed and ready to be used with a GPU.
 
-## Example with Stochastic Block Model
+## Example with the Stochastic Block Model
 
-- Generate a synthetic graph to analyse with SBM:
+- Generate a synthetic graph for analysis with SBM:
 
 ```python
 from sparsebm import generate_SBM_dataset
@@ -67,7 +67,7 @@ cluster_indicator = dataset["cluster_indicator"]
     print("Labels:", model.labels)
 ```
 
-- Compute performances:
+- Compute performance:
 
 ```python
     from sparsebm.utils import ARI
@@ -76,9 +76,9 @@ cluster_indicator = dataset["cluster_indicator"]
 ```
 
 
-## Example with Latent Block Model
+## Example with the Latent Block Model
 
-- Generate a synthetic graph to analyse with LBM:
+- Generate a synthetic graph for analysis with LBM:
 
 ```python
     from sparsebm import generate_LBM_dataset
@@ -108,7 +108,7 @@ cluster_indicator = dataset["cluster_indicator"]
     print("Column Labels:", model.column_labels)
 ```
 
-- Compute performances:
+- Compute performance:
 
 ```python
     from sparsebm.utils import CARI
