@@ -45,13 +45,13 @@ For users who do not have GPU, we recommend the free serverless Jupyter notebook
 
 - Generate a synthetic graph for analysis with SBM:
 
-```python
-from sparsebm import generate_SBM_dataset
+    ```python
+    from sparsebm import generate_SBM_dataset
 
-dataset = generate_SBM_dataset(symmetric=True)
-graph = dataset["data"]
-cluster_indicator = dataset["cluster_indicator"]
-```
+    dataset = generate_SBM_dataset(symmetric=True)
+    graph = dataset["data"]
+    cluster_indicator = dataset["cluster_indicator"]
+    ```
 
 
 - Infer with the Bernoulli Stochastic Bloc Model:
