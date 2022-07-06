@@ -97,7 +97,7 @@ For users who do not have GPU, we recommend the free serverless Jupyter notebook
     number_of_row_clusters = row_cluster_indicator.shape[1]
     number_of_columns_clusters = column_cluster_indicator.shape[1]
 
-    # A number of classes must be specify. Otherwise see model selection.
+    # A number of classes must be specified. Otherwise see model selection.
     model = LBM(
         number_of_row_clusters,
         number_of_columns_clusters,
