@@ -117,8 +117,10 @@ class ModelSelection:
         )
 
         self._X = sp.csr_matrix(graph)
+        self._X_t = sp.csr_matrix(graph.T)
         if self._use_gpu:
             self._X = cupyx.scipy.sparse.csr_matrix(self._X.astype(float))
+            self._X_t = cupyx.scipy.sparse.csr_matrix(self._X_t.astype(float))
 
         # Instantiate and training first model.
         if self._model_type == "LBM":
@@ -471,6 +473,7 @@ class ModelSelection:
             else:
                 m._fit_single(
                     self._X,
+                    self._X_t,
                     self._indices_ones,
                     self.graph.shape[0],
                     init_params=True,
@@ -493,6 +496,7 @@ class ModelSelection:
         else:
             models[0][1]._fit_single(
                 self._X,
+                self._X_t,
                 self._indices_ones,
                 self.graph.shape[0],
                 init_params=True,
