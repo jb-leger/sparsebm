@@ -136,9 +136,7 @@ class SBM(BaseEstimator):
         self.trained_successfully_ = False
 
         if self.use_gpu and (
-            not _CUPY_INSTALLED
-            or not _DEFAULT_USE_GPU
-            or not cupy.cuda.is_available()
+            not _CUPY_INSTALLED or not _DEFAULT_USE_GPU or not cupy.cuda.is_available()
         ):
             self.gpu_number = None
             self.use_gpu = False
@@ -170,33 +168,25 @@ class SBM(BaseEstimator):
     @property
     def group_connection_probabilities(self):
         """array_like: Returns the group connection probabilities"""
-        assert (
-            self.trained_successfully_ == True
-        ), "Model not trained successfully"
+        assert self.trained_successfully_ == True, "Model not trained successfully"
         return self.pi_
 
     @property
     def group_membership_probability(self):
         """array_like: Returns the group membership probabilities"""
-        assert (
-            self.trained_successfully_ == True
-        ), "Model not trained successfully"
+        assert self.trained_successfully_ == True, "Model not trained successfully"
         return self.alpha_
 
     @property
     def labels(self):
         """array_like: Returns the labels"""
-        assert (
-            self.trained_successfully_ == True
-        ), "Model not trained successfully"
+        assert self.trained_successfully_ == True, "Model not trained successfully"
         return self.tau_.argmax(1)
 
     @property
     def predict_proba(self):
         """array_like: Returns the predicted classes membership probabilities"""
-        assert (
-            self.trained_successfully_ == True
-        ), "Model not trained successfully"
+        assert self.trained_successfully_ == True, "Model not trained successfully"
         return self.tau_
 
     @property
@@ -217,9 +207,7 @@ class SBM(BaseEstimator):
         return (
             self.loglikelihood_
             - (self.n_clusters - 1) / 2 * np.log(self._nb_rows)
-            - (self.n_clusters ** 2)
-            / 2
-            * np.log(self._nb_rows * (self._nb_rows - 1))
+            - (self.n_clusters**2) / 2 * np.log(self._nb_rows * (self._nb_rows - 1))
         )
 
     def fit(self, X, y=None, symmetric=False):
@@ -237,8 +225,10 @@ class SBM(BaseEstimator):
         assert n == n2, "Entry matrix is not squared"
         self._nb_rows = n
         X = sp.csr_matrix(X)
+        X_t = sp.csr_matrix(X.T)
         if self.use_gpu:
             X = self._cupyx.scipy.sparse.csr_matrix(X.astype(float))
+            X_t = self._cupyx.scipy.sparse.csr_matrix(X_t.astype(float))
             X_coo = X.tocoo()
             indices_ones = [X_coo.row, X_coo.col]
         else:
@@ -248,9 +238,7 @@ class SBM(BaseEstimator):
             # Initialize and start to run each for a while.
 
             if self.verbosity > 0:
-                logger.info(
-                    "---------- START RANDOM INITIALIZATIONS ---------- "
-                )
+                logger.info("---------- START RANDOM INITIALIZATIONS ---------- ")
                 bar = progressbar.ProgressBar(
                     max_value=self.n_init,
                     widgets=[
@@ -274,6 +262,7 @@ class SBM(BaseEstimator):
                     bar.update(run_number)
                 (success, ll, pi, alpha, tau) = self._fit_single(
                     X,
+                    X_t,
                     indices_ones,
                     n,
                     early_stop=self.n_iter_early_stop,
@@ -313,6 +302,7 @@ class SBM(BaseEstimator):
 
                 (success, ll, pi, alpha, tau) = self._fit_single(
                     X,
+                    X_t,
                     indices_ones,
                     n,
                     init_params=(pi, alpha, tau),
@@ -335,6 +325,7 @@ class SBM(BaseEstimator):
     def _fit_single(
         self,
         X,
+        X_t,
         indices_ones,
         n,
         early_stop=None,
@@ -389,7 +380,7 @@ class SBM(BaseEstimator):
                 else:
                     logger.debug(log_txt)
                 old_ll = ll
-            pi, alpha, tau = self._step_EM(X, indices_ones, pi, alpha, tau, n)
+            pi, alpha, tau = self._step_EM(X, X_t, indices_ones, pi, alpha, tau, n)
         else:
             success = True
         if self.verbosity > 1 and run_number:
@@ -406,7 +397,7 @@ class SBM(BaseEstimator):
 
         return success, ll, pi, alpha, tau
 
-    def _step_EM(self, X, indices_ones, pi, alpha, tau, n1):
+    def _step_EM(self, X, X_t, indices_ones, pi, alpha, tau, n1):
         """Realize EM step. Update both variationnal and model parameters.
 
         Parameters
@@ -424,14 +415,20 @@ class SBM(BaseEstimator):
 
         ########################## E-step  ##########################
         u = X.dot(tau)
-
+        v = X_t.dot(tau)
         # Update of tau_1 with sparsity trick.
         l_tau = (
             (
                 (u.reshape(n1, 1, nq))
                 * (self._np.log(pi) - self._np.log(1 - pi)).reshape(1, nq, nq)
             ).sum(2)
+            + (
+                (v.reshape(n1, 1, nq))
+                * (np.log(pi.T) - np.log(1 - pi.T)).reshape(1, nq, nq)
+            ).sum(2)
             + self._np.log(alpha.reshape(1, nq))
+            + tau.sum(0) @ np.log(1 - pi.T)
+            - tau @ np.log(1 - pi.T)
             + tau.sum(0) @ np.log(1 - pi)
             - tau @ np.log(1 - pi)
         )
@@ -535,8 +532,7 @@ class SBM(BaseEstimator):
                 )"""
 
     def copy(self):
-        """Returns a copy of the model.
-        """
+        """Returns a copy of the model."""
         model = SBM(
             self.n_clusters,
             max_iter=self.max_iter,
