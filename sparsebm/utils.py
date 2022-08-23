@@ -502,3 +502,38 @@ def reorder_rows(X: coo_matrix, idx: np.ndarray) -> None:
     idx = np.argsort(idx)
     idx = np.asarray(idx, dtype=X.row.dtype)
     X.row = idx[X.row]
+
+
+def reorder_cols(X: coo_matrix, idx: np.ndarray) -> None:
+    """ Reorders the columns of the COO sparse matrix given in argument.
+
+    Parameters
+    ----------
+    X : scipy.sparse.coo_matrix
+        The sparse matrix to reorder.
+    idx: numpy.ndarray,  shape=(X.shape[1],)
+        Row indices used to reorder the matrix.
+    """
+    idx = idx.flatten()
+    assert isinstance(
+        X, scipy.sparse.coo_matrix
+    ), "X must be scipy.sparse.coo_matrix"
+    assert X.shape[1] == idx.shape[0], "idx shape[0] must be X shape[0]"
+    idx = np.argsort(idx)
+    idx = np.asarray(idx, dtype=X.col.dtype)
+    X.col = idx[X.col]
+
+
+def reorder_rows_and_cols(X: coo_matrix, idx: np.ndarray) -> None:
+    """ Reorders the columns of the COO sparse matrix given in argument.
+
+    Parameters
+    ----------
+    X : scipy.sparse.coo_matrix
+        The sparse matrix to reorder. Must be square matrix.
+    idx: numpy.ndarray,  shape=(X.shape[0],)
+        Row indices used to reorder the matrix.
+    """
+
+    reorder_rows(X, idx)
+    reorder_cols(X, idx)
