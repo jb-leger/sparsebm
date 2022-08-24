@@ -1,13 +1,13 @@
 import sys
 import copy
+import logging
+from itertools import count
+from heapq import heappush, heappushpop
+
 import progressbar
 import numpy as np
 import scipy.sparse as sp
-from heapq import heappush, heappushpop
-from itertools import count
-from sklearn.utils.estimator_checks import check_estimator
 from sklearn.base import BaseEstimator
-import logging
 
 logger = logging.getLogger(__name__)
 

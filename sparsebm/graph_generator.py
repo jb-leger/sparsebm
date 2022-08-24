@@ -1,9 +1,9 @@
-import numpy as np
-import scipy as sp
-import scipy.sparse
-import progressbar
-from typing import Optional
 import logging
+
+import numpy as np
+import progressbar
+import scipy.sparse
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ def generate_LBM_dataset(
     verbosity: Optional[int] = 1,
     sparse: Optional[bool] = 1,
 ) -> dict:
-    """ Generate a sparse bipartite graph with Latent Block Models.
+    """Generate a sparse bipartite graph with Latent Block Models.
 
     Parameters
     ----------
@@ -74,11 +74,9 @@ def generate_LBM_dataset(
 
 
     """
-    number_of_rows = number_of_rows if number_of_rows else 2 * 10 ** 3
-    number_of_columns = number_of_columns if number_of_columns else 10 ** 3
-    nb_row_clusters = (
-        nb_row_clusters if nb_row_clusters else np.random.randint(3, 6)
-    )
+    number_of_rows = number_of_rows if number_of_rows else 2 * 10**3
+    number_of_columns = number_of_columns if number_of_columns else 10**3
+    nb_row_clusters = nb_row_clusters if nb_row_clusters else np.random.randint(3, 6)
     nb_column_clusters = (
         nb_column_clusters if nb_column_clusters else np.random.randint(3, 6)
     )
@@ -141,8 +139,7 @@ def generate_LBM_dataset(
             )
         else:
             row_classes = [
-                row_cluster_indicator[:, q].nonzero()[0]
-                for q in range(nb_row_clusters)
+                row_cluster_indicator[:, q].nonzero()[0] for q in range(nb_row_clusters)
             ]
             col_classes = [
                 column_cluster_indicator[:, l].nonzero()[0]
@@ -161,9 +158,7 @@ def generate_LBM_dataset(
                 if verbosity > 0:
                     bar.update(i)
                 n1, n2 = row_classes[q].size, col_classes[l].size
-                nnz = np.random.binomial(
-                    n1 * n2, connection_probabilities[q, l]
-                )
+                nnz = np.random.binomial(n1 * n2, connection_probabilities[q, l])
                 if nnz > 0:
                     row = np.random.choice(row_classes[q], size=2 * nnz)
                     col = np.random.choice(col_classes[l], size=2 * nnz)
@@ -171,9 +166,7 @@ def generate_LBM_dataset(
                     while row_col_unique.shape[0] < nnz:
                         row = np.random.choice(row_classes[q], size=2 * nnz)
                         col = np.random.choice(col_classes[l], size=2 * nnz)
-                        row_col_unique = np.unique(
-                            np.stack((row, col), 1), axis=0
-                        )
+                        row_col_unique = np.unique(np.stack((row, col), 1), axis=0)
                     np.random.shuffle(row_col_unique)
                     rows = np.concatenate((rows, row_col_unique[:nnz, 0]))
                     cols = np.concatenate((cols, row_col_unique[:nnz, 1]))
@@ -208,7 +201,7 @@ def generate_SBM_dataset(
     symmetric: Optional[bool] = False,
     verbosity: Optional[int] = 1,
 ) -> dict:
-    """ Generate a sparse graph with Stochastic Block Models.
+    """Generate a sparse graph with Stochastic Block Models.
 
     Parameters
     ----------
@@ -258,7 +251,7 @@ def generate_SBM_dataset(
     ... )
 
     """
-    number_of_nodes = number_of_nodes if number_of_nodes else 10 ** 3
+    number_of_nodes = number_of_nodes if number_of_nodes else 10**3
     number_of_clusters = (
         number_of_clusters if number_of_clusters else np.random.randint(3, 6)
     )
@@ -269,8 +262,7 @@ def generate_SBM_dataset(
     )
     if connection_probabilities is None:
         connection_probabilities = (
-            np.ones((number_of_clusters, number_of_clusters))
-            * np.random.rand()
+            np.ones((number_of_clusters, number_of_clusters)) * np.random.rand()
         )
         d = connection_probabilities[0, 0] * np.random.randint(
             2, 20, number_of_clusters
@@ -283,7 +275,7 @@ def generate_SBM_dataset(
         if verbosity > 0:
             logger.info("---------- START Graph Generation ---------- ")
             bar = progressbar.ProgressBar(
-                max_value=number_of_clusters ** 2,
+                max_value=number_of_clusters**2,
                 widgets=[
                     progressbar.SimpleProgress(),
                     " Generating block: ",
@@ -301,8 +293,7 @@ def generate_SBM_dataset(
             1, cluster_proportions.flatten(), size=number_of_nodes
         )
         classes = [
-            cluster_indicator[:, q].nonzero()[0]
-            for q in range(number_of_clusters)
+            cluster_indicator[:, q].nonzero()[0] for q in range(number_of_clusters)
         ]
 
         rows = np.array([])
@@ -330,9 +321,7 @@ def generate_SBM_dataset(
                     rows = np.concatenate((rows, row_col_unique[:, 0]))
                     cols = np.concatenate((cols, row_col_unique[:, 1]))
             else:
-                nnz = np.random.binomial(
-                    n1 * n2, connection_probabilities[q, l]
-                )
+                nnz = np.random.binomial(n1 * n2, connection_probabilities[q, l])
                 if nnz > 0:
                     row = np.random.choice(classes[q], size=2 * nnz)
                     col = np.random.choice(classes[l], size=2 * nnz)
@@ -340,9 +329,7 @@ def generate_SBM_dataset(
                     while row_col_unique.shape[0] < nnz:
                         row = np.random.choice(classes[q], size=2 * nnz)
                         col = np.random.choice(classes[l], size=2 * nnz)
-                        row_col_unique = np.unique(
-                            np.stack((row, col), 1), axis=0
-                        )
+                        row_col_unique = np.unique(np.stack((row, col), 1), axis=0)
                     np.random.shuffle(row_col_unique)
                     rows = np.concatenate((rows, row_col_unique[:nnz, 0]))
                     cols = np.concatenate((cols, row_col_unique[:nnz, 1]))

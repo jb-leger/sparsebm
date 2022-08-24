@@ -1,9 +1,12 @@
-import argparse
-import numpy as np
 import csv
-import pandas as pd
 import json
+import logging
+import argparse
+
+import numpy as np
+import pandas as pd
 import scipy.sparse as sp
+
 from sparsebm import (
     SBM,
     LBM,
@@ -12,7 +15,7 @@ from sparsebm import (
     generate_SBM_dataset,
 )
 from sparsebm.utils import reorder_rows, ARI
-import logging
+
 
 logger = logging.getLogger(__name__)
 
@@ -26,23 +29,15 @@ except ImportError:
 
 def define_parsers():
     main = argparse.ArgumentParser(prog="sparsebm")
-    subparsers = main.add_subparsers(
-        help="algorithm to use", dest="subparser_name"
-    )
+    subparsers = main.add_subparsers(help="algorithm to use", dest="subparser_name")
 
-    sbm_parser = subparsers.add_parser(
-        "sbm", help="use the stochastic block model"
-    )
-    lbm_parser = subparsers.add_parser(
-        "lbm", help="use the latent block model"
-    )
+    sbm_parser = subparsers.add_parser("sbm", help="use the stochastic block model")
+    lbm_parser = subparsers.add_parser("lbm", help="use the latent block model")
     ms_parser = subparsers.add_parser(
         "modelselection", help="use the model selection with LBM or SBM"
     )
     input_grp = ms_parser.add_argument_group("mandatory arguments")
-    input_grp.add_argument(
-        "ADJACENCY_MATRIX", help="List of edges in CSV format"
-    )
+    input_grp.add_argument("ADJACENCY_MATRIX", help="List of edges in CSV format")
     input_grp.add_argument(
         "-t",
         "--type",
@@ -123,9 +118,7 @@ def define_parsers():
     )
     for parser in [sbm_parser, lbm_parser]:
         input_grp = parser.add_argument_group("mandatory arguments")
-        input_grp.add_argument(
-            "ADJACENCY_MATRIX", help="List of edges in CSV format"
-        )
+        input_grp.add_argument("ADJACENCY_MATRIX", help="List of edges in CSV format")
         if parser == lbm_parser:
             input_grp.add_argument(
                 "-k1",
@@ -246,9 +239,7 @@ def graph_from_csv(file, type, sep=","):
         if type == "sbm":
             node_i_from = np.unique(npa)
             node_i_to = np.arange(node_i_from.size)
-            i_mapping = {
-                f: t for f, t in np.stack((node_i_from, node_i_to), 1)
-            }
+            i_mapping = {f: t for f, t in np.stack((node_i_from, node_i_to), 1)}
             rows = pda[0].map(i_mapping)
             cols = pda[1].map(i_mapping)
             graph = sp.coo_matrix(
@@ -259,15 +250,11 @@ def graph_from_csv(file, type, sep=","):
         else:
             node_i_from = np.unique(npa[:, 0])
             node_i_to = np.arange(node_i_from.size)
-            i_mapping = {
-                f: t for f, t in np.stack((node_i_from, node_i_to), 1)
-            }
+            i_mapping = {f: t for f, t in np.stack((node_i_from, node_i_to), 1)}
             rows = pda[0].map(i_mapping)
             node_j_from = np.unique(npa[:, 1])
             node_j_to = np.arange(node_j_from.size)
-            j_mapping = {
-                f: t for f, t in np.stack((node_j_from, node_j_to), 1)
-            }
+            j_mapping = {f: t for f, t in np.stack((node_j_from, node_j_to), 1)}
             cols = pda[1].map(j_mapping)
             graph = sp.coo_matrix(
                 (np.ones(npa.shape[0]), (rows, cols)),
@@ -306,9 +293,7 @@ def process_sbm(args):
         gpu_index=args["gpu_index"],
     )
     symmetric = str2bool(args["symmetric"])
-    logger.info(
-        "Runing with symmetric adjacency matrix : {}".format(symmetric)
-    )
+    logger.info("Runing with symmetric adjacency matrix : {}".format(symmetric))
     model.fit(graph, symmetric=symmetric)
 
     if not model.trained_successfully:
@@ -321,9 +306,7 @@ def process_sbm(args):
         )
     )
     labels = model.labels
-    groups = [
-        np.argwhere(labels == q).flatten() for q in range(args["n_clusters"])
-    ]
+    groups = [np.argwhere(labels == q).flatten() for q in range(args["n_clusters"])]
     row_to_from = {v: k for k, v in row_from_to.items()}
     groups = [pd.Series(g).map(row_to_from).tolist() for g in groups]
 
@@ -369,16 +352,14 @@ def process_lbm(args):
 
     row_labels = model.row_labels
     row_groups = [
-        np.argwhere(row_labels == q).flatten()
-        for q in range(args["n_row_clusters"])
+        np.argwhere(row_labels == q).flatten() for q in range(args["n_row_clusters"])
     ]
     row_to_from = {v: k for k, v in row_from_to.items()}
     row_groups = [pd.Series(g).map(row_to_from).tolist() for g in row_groups]
 
     col_labels = model.column_labels
     col_groups = [
-        np.argwhere(col_labels == q).flatten()
-        for q in range(args["n_column_clusters"])
+        np.argwhere(col_labels == q).flatten() for q in range(args["n_column_clusters"])
     ]
     col_to_from = {v: k for k, v in col_from_to.items()}
     col_groups = [pd.Series(g).map(col_to_from).tolist() for g in col_groups]
@@ -404,9 +385,7 @@ def generate_sbm(args):
     else:
         conf = {}
 
-    number_of_nodes = (
-        conf["number_of_nodes"] if "number_of_nodes" in conf else None
-    )
+    number_of_nodes = conf["number_of_nodes"] if "number_of_nodes" in conf else None
     number_of_clusters = (
         conf["number_of_clusters"] if "number_of_clusters" in conf else None
     )
@@ -416,9 +395,7 @@ def generate_sbm(args):
         else None
     )
     cluster_proportions = (
-        np.array(conf["cluster_proportions"])
-        if "cluster_proportions" in conf
-        else None
+        np.array(conf["cluster_proportions"]) if "cluster_proportions" in conf else None
     )
     symmetric = conf["symmetric"] if "symmetric" in conf else False
     dataset = generate_SBM_dataset(
@@ -434,8 +411,7 @@ def generate_sbm(args):
     labels = cluster_indicator.argmax(1)
     number_of_clusters = cluster_indicator.shape[1]
     groups = [
-        np.argwhere(labels == q).flatten().tolist()
-        for q in range(number_of_clusters)
+        np.argwhere(labels == q).flatten().tolist() for q in range(number_of_clusters)
     ]
     results = {
         "node_ids_grouped": groups,
@@ -465,15 +441,11 @@ def generate_lbm(args):
     else:
         conf = {}
 
-    number_of_rows = (
-        conf["number_of_rows"] if "number_of_rows" in conf else None
-    )
+    number_of_rows = conf["number_of_rows"] if "number_of_rows" in conf else None
     number_of_columns = (
         conf["number_of_columns"] if "number_of_columns" in conf else None
     )
-    nb_row_clusters = (
-        conf["nb_row_clusters"] if "nb_row_clusters" in conf else None
-    )
+    nb_row_clusters = conf["nb_row_clusters"] if "nb_row_clusters" in conf else None
     nb_column_clusters = (
         conf["nb_column_clusters"] if "nb_column_clusters" in conf else None
     )
@@ -511,8 +483,7 @@ def generate_lbm(args):
     nb_row_clusters = row_cluster_indicator.shape[1]
     nb_column_clusters = column_cluster_indicator.shape[1]
     row_groups = [
-        np.argwhere(row_labels == q).flatten().tolist()
-        for q in range(nb_row_clusters)
+        np.argwhere(row_labels == q).flatten().tolist() for q in range(nb_row_clusters)
     ]
     col_groups = [
         np.argwhere(col_labels == q).flatten().tolist()
@@ -572,9 +543,7 @@ def process_model_selection(args):
     )
     if args["type"] == "lbm":
         logger.info(
-            "The model selection picked {} row classes".format(
-                model.n_row_clusters
-            )
+            "The model selection picked {} row classes".format(model.n_row_clusters)
         )
         logger.info(
             "The model selection picked {} column classes".format(
@@ -585,23 +554,17 @@ def process_model_selection(args):
         nb_column_clusters = model.n_column_clusters
         row_labels = model.row_labels
         row_groups = [
-            np.argwhere(row_labels == q).flatten()
-            for q in range(nb_row_clusters)
+            np.argwhere(row_labels == q).flatten() for q in range(nb_row_clusters)
         ]
         row_to_from = {v: k for k, v in row_from_to.items()}
-        row_groups = [
-            pd.Series(g).map(row_to_from).tolist() for g in row_groups
-        ]
+        row_groups = [pd.Series(g).map(row_to_from).tolist() for g in row_groups]
 
         col_labels = model.column_labels
         col_groups = [
-            np.argwhere(col_labels == q).flatten()
-            for q in range(nb_column_clusters)
+            np.argwhere(col_labels == q).flatten() for q in range(nb_column_clusters)
         ]
         col_to_from = {v: k for k, v in col_from_to.items()}
-        col_groups = [
-            pd.Series(g).map(col_to_from).tolist() for g in col_groups
-        ]
+        col_groups = [pd.Series(g).map(col_to_from).tolist() for g in col_groups]
 
         results = {
             "ILC": model.get_ICL(),
@@ -614,14 +577,10 @@ def process_model_selection(args):
             "node_type_2_ids_clustered": col_groups,
         }
     else:
-        logger.info(
-            "The model selection picked {} classes".format(model.n_clusters)
-        )
+        logger.info("The model selection picked {} classes".format(model.n_clusters))
         nb_clusters = model.n_clusters
         labels = model.labels
-        groups = [
-            np.argwhere(labels == q).flatten() for q in range(nb_clusters)
-        ]
+        groups = [np.argwhere(labels == q).flatten() for q in range(nb_clusters)]
         row_to_from = {v: k for k, v in row_from_to.items()}
         groups = [pd.Series(g).map(row_to_from).tolist() for g in groups]
 

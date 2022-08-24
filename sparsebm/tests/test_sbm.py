@@ -7,7 +7,7 @@ import itertools
 
 def test_sbm():
     np.random.seed(0)
-    n = 10 ** 3
+    n = 10**3
     nq = 4
     alpha = np.ones(nq) / nq
     degree_wanted = 20
@@ -21,7 +21,10 @@ def test_sbm():
     )
 
     data = generate_SBM_dataset(n, nq, pi_sim, alpha, symmetric=True)
-    X, Y1, = (data["data"], data["cluster_indicator"])
+    (
+        X,
+        Y1,
+    ) = (data["data"], data["cluster_indicator"])
 
     model = SBM(
         nq,

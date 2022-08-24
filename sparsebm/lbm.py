@@ -1,12 +1,13 @@
 import sys
 import copy
+import logging
+from itertools import count
+from heapq import heappush, heappushpop
+
 import progressbar
 import numpy as np
 import scipy.sparse as sp
-from heapq import heappush, heappushpop
-from itertools import count
 from sklearn.base import BaseEstimator
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -107,41 +108,31 @@ class LBM(BaseEstimator):
     @property
     def group_connection_probabilities(self):
         """array_like: Returns the group connection probabilities"""
-        assert (
-            self.trained_successfully_ == True
-        ), "Model not trained successfully"
+        assert self.trained_successfully_ == True, "Model not trained successfully"
         return self.pi_
 
     @property
     def row_group_membership_probability(self):
         """array_like: Returns the row group membership probabilities"""
-        assert (
-            self.trained_successfully_ == True
-        ), "Model not trained successfully"
+        assert self.trained_successfully_ == True, "Model not trained successfully"
         return self.alpha_1_
 
     @property
     def column_group_membership_probability(self):
         """array_like: Returns the column group membership probabilities"""
-        assert (
-            self.trained_successfully_ == True
-        ), "Model not trained successfully"
+        assert self.trained_successfully_ == True, "Model not trained successfully"
         return self.alpha_2_
 
     @property
     def row_labels(self):
         """array_like: Returns the row labels"""
-        assert (
-            self.trained_successfully_ == True
-        ), "Model not trained successfully"
+        assert self.trained_successfully_ == True, "Model not trained successfully"
         return self.tau_1_.argmax(1)
 
     @property
     def column_labels(self):
         """array_like: Returns the column labels"""
-        assert (
-            self.trained_successfully_ == True
-        ), "Model not trained successfully"
+        assert self.trained_successfully_ == True, "Model not trained successfully"
         return self.tau_2_.argmax(1)
 
     @property
@@ -153,9 +144,7 @@ class LBM(BaseEstimator):
     @property
     def column_predict_proba(self):
         """array_like: Returns the predicted column classes membership probabilities"""
-        assert (
-            self.trained_successfully_ == True
-        ), "Model not trained successfully"
+        assert self.trained_successfully_ == True, "Model not trained successfully"
         return self.tau_2_
 
     @property
@@ -190,9 +179,7 @@ class LBM(BaseEstimator):
         self.trained_successfully_ = False
 
         if self.use_gpu and (
-            not _CUPY_INSTALLED
-            or not _DEFAULT_USE_GPU
-            or not cupy.cuda.is_available()
+            not _CUPY_INSTALLED or not _DEFAULT_USE_GPU or not cupy.cuda.is_available()
         ):
             self.gpu_number = None
             self.use_gpu = False
@@ -233,9 +220,7 @@ class LBM(BaseEstimator):
         float
             value of the ICL criteria.
         """
-        assert (
-            self.trained_successfully_ == True
-        ), "Model not trained successfully"
+        assert self.trained_successfully_ == True, "Model not trained successfully"
         return (
             self.loglikelihood_
             - (self.n_row_clusters - 1) / 2 * np.log(self._nb_rows)
@@ -270,9 +255,7 @@ class LBM(BaseEstimator):
             # Initialize and start to run each for a while.
 
             if self.verbosity > 0:
-                logger.info(
-                    "---------- START RANDOM INITIALIZATIONS ---------- "
-                )
+                logger.info("---------- START RANDOM INITIALIZATIONS ---------- ")
                 bar = progressbar.ProgressBar(
                     max_value=self.n_init,
                     widgets=[
@@ -294,15 +277,7 @@ class LBM(BaseEstimator):
             for run_number in range(self.n_init):
                 if self.verbosity > 0:
                     bar.update(run_number)
-                (
-                    success,
-                    ll,
-                    pi,
-                    alpha_1,
-                    alpha_2,
-                    tau_1,
-                    tau_2,
-                ) = self._fit_single(
+                (success, ll, pi, alpha_1, alpha_2, tau_1, tau_2,) = self._fit_single(
                     X,
                     indices_ones,
                     n1,
@@ -355,15 +330,7 @@ class LBM(BaseEstimator):
                     init[5],
                     init[6],
                 )
-                (
-                    success,
-                    ll,
-                    pi,
-                    alpha_1,
-                    alpha_2,
-                    tau_1,
-                    tau_2,
-                ) = self._fit_single(
+                (success, ll, pi, alpha_1, alpha_2, tau_1, tau_2,) = self._fit_single(
                     X,
                     indices_ones,
                     n1,
@@ -478,9 +445,7 @@ class LBM(BaseEstimator):
 
         return success, ll, pi, alpha_1, alpha_2, tau_1, tau_2
 
-    def _step_EM(
-        self, X, indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2, n1, n2
-    ):
+    def _step_EM(self, X, indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2, n1, n2):
         """Realize EM step. Update both variationnal and model parameters.
 
         Parameters
@@ -551,9 +516,7 @@ class LBM(BaseEstimator):
         ).sum(0) / (tau_1.sum(0).reshape(nq, 1) * tau_2.sum(0).reshape(1, nl))
         return pi, alpha_1, alpha_2, tau_1, tau_2
 
-    def _compute_likelihood(
-        self, indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2
-    ):
+    def _compute_likelihood(self, indices_ones, pi, alpha_1, alpha_2, tau_1, tau_2):
         """Compute the log-likelihood of the model with the given parameters.
 
         Parameters
@@ -626,8 +589,7 @@ class LBM(BaseEstimator):
                 )"""
 
     def copy(self):
-        """Returns a copy of the model.
-        """
+        """Returns a copy of the model."""
         model = LBM(
             n_row_clusters=self.n_row_clusters,
             n_column_clusters=self.n_column_clusters,
