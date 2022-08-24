@@ -1,10 +1,12 @@
-import numpy as np
-import scipy
-from . import LBM, SBM
-from typing import Tuple, Union, Optional
-from scipy.sparse import coo_matrix
-from scipy.special import comb
 import logging
+from typing import Tuple, Union, Optional
+
+import scipy
+import numpy as np
+from scipy.special import comb
+from scipy.sparse import coo_matrix
+
+from . import LBM, SBM
 
 logger = logging.getLogger(__name__)
 
@@ -175,26 +177,14 @@ def CARI(
         return 1.0
 
     # Compute the contingency data tables
-    _, true_class_idx_part_1 = np.unique(
-        labels_true_part_1, return_inverse=True
-    )
-    _, pred_class_idx_part_1 = np.unique(
-        labels_pred_part_1, return_inverse=True
-    )
+    _, true_class_idx_part_1 = np.unique(labels_true_part_1, return_inverse=True)
+    _, pred_class_idx_part_1 = np.unique(labels_pred_part_1, return_inverse=True)
     contingency_part_1 = np.zeros((n_classes_part_1, n_clusters_part_1))
-    np.add.at(
-        contingency_part_1, (true_class_idx_part_1, pred_class_idx_part_1), 1
-    )
-    _, true_class_idx_part_2 = np.unique(
-        labels_true_part_2, return_inverse=True
-    )
-    _, pred_class_idx_part_2 = np.unique(
-        labels_pred_part_2, return_inverse=True
-    )
+    np.add.at(contingency_part_1, (true_class_idx_part_1, pred_class_idx_part_1), 1)
+    _, true_class_idx_part_2 = np.unique(labels_true_part_2, return_inverse=True)
+    _, pred_class_idx_part_2 = np.unique(labels_pred_part_2, return_inverse=True)
     contingency_part_2 = np.zeros((n_classes_part_2, n_clusters_part_2))
-    np.add.at(
-        contingency_part_2, (true_class_idx_part_2, pred_class_idx_part_2), 1
-    )
+    np.add.at(contingency_part_2, (true_class_idx_part_2, pred_class_idx_part_2), 1)
 
     # Theorem 3.3 of Robert2019 (https://hal.inria.fr/hal-01524832v4) defines
     # the final contingency matrix by the Kronecker product between the two
@@ -218,7 +208,7 @@ def lbm_merge_group(
     idx_group_2: int,
     indices_ones: np.ndarray,
 ) -> Tuple[float, LBM]:
-    """ Given a LBM model, returns the model obtained from the merge of the specified classes.
+    """Given a LBM model, returns the model obtained from the merge of the specified classes.
 
     Parameters
     ----------
@@ -295,7 +285,7 @@ def lbm_merge_group(
 def sbm_merge_group(
     model: SBM, idx_group_1: int, idx_group_2: int, indices_ones: np.ndarray
 ) -> Tuple[float, SBM]:
-    """ Given a SBM model, returns the model obtained from the merge of the specified classes.
+    """Given a SBM model, returns the model obtained from the merge of the specified classes.
 
     Parameters
     ----------
@@ -337,8 +327,7 @@ def sbm_merge_group(
     a1 = model._np.asarray(model.alpha_)
     t1_sum = t1.sum(0)
     pi = (
-        t1[indices_ones[0]].reshape(-1, nq, 1)
-        * t1[indices_ones[1]].reshape(-1, 1, nq)
+        t1[indices_ones[0]].reshape(-1, nq, 1) * t1[indices_ones[1]].reshape(-1, 1, nq)
     ).sum(0) / ((t1_sum.reshape((-1, 1)) * t1_sum) - t1.T @ t1)
 
     ll = model._compute_likelihood(indices_ones, pi, a1, t1)
@@ -354,7 +343,7 @@ def lbm_split_group(
     index: int,
     indices_ones: np.array,
 ) -> Tuple[float, LBM]:
-    """ Given a LBM model, returns the model obtained from the split of the specified class.
+    """Given a LBM model, returns the model obtained from the split of the specified class.
 
     The specified class is splitted according to its median of degree.
 
@@ -415,8 +404,7 @@ def lbm_split_group(
     a2 = model._np.asarray(model.alpha_2_)
 
     pi = (
-        t1[indices_ones[0]].reshape(-1, nq, 1)
-        * t2[indices_ones[1]].reshape(-1, 1, nl)
+        t1[indices_ones[0]].reshape(-1, nq, 1) * t2[indices_ones[1]].reshape(-1, 1, nl)
     ).sum(0) / (t1.sum(0).reshape(nq, 1) * t2.sum(0).reshape(1, nl))
 
     model.pi_ = pi.get() if model.use_gpu else pi
@@ -429,7 +417,7 @@ def lbm_split_group(
 def sbm_split_group(
     model: SBM, degrees: np.ndarray, index: int, indices_ones: np.array
 ):
-    """ Given a SBM model, returns the model obtained from the split of the specified class.
+    """Given a SBM model, returns the model obtained from the split of the specified class.
 
     The specified class is splitted according to its median of degree.
 
@@ -473,8 +461,7 @@ def sbm_split_group(
     t1_sum = t1.sum(0)
 
     pi = (
-        t1[indices_ones[0]].reshape(-1, nq, 1)
-        * t1[indices_ones[1]].reshape(-1, 1, nq)
+        t1[indices_ones[0]].reshape(-1, nq, 1) * t1[indices_ones[1]].reshape(-1, 1, nq)
     ).sum(0) / ((t1_sum.reshape((-1, 1)) * t1_sum) - t1.T @ t1)
 
     model.pi_ = pi.get() if model.use_gpu else pi
@@ -485,7 +472,7 @@ def sbm_split_group(
 
 
 def reorder_rows(X: coo_matrix, idx: np.ndarray) -> None:
-    """ Reorders the rows of the COO sparse matrix given in argument.
+    """Reorders the rows of the COO sparse matrix given in argument.
 
     Parameters
     ----------
@@ -495,9 +482,7 @@ def reorder_rows(X: coo_matrix, idx: np.ndarray) -> None:
         Row indices used to reorder the matrix.
     """
     idx = idx.flatten()
-    assert isinstance(
-        X, scipy.sparse.coo_matrix
-    ), "X must be scipy.sparse.coo_matrix"
+    assert isinstance(X, scipy.sparse.coo_matrix), "X must be scipy.sparse.coo_matrix"
     assert X.shape[0] == idx.shape[0], "idx shape[0] must be X shape[0]"
     idx = np.argsort(idx)
     idx = np.asarray(idx, dtype=X.row.dtype)
@@ -505,7 +490,7 @@ def reorder_rows(X: coo_matrix, idx: np.ndarray) -> None:
 
 
 def reorder_cols(X: coo_matrix, idx: np.ndarray) -> None:
-    """ Reorders the columns of the COO sparse matrix given in argument.
+    """Reorders the columns of the COO sparse matrix given in argument.
 
     Parameters
     ----------
@@ -515,9 +500,7 @@ def reorder_cols(X: coo_matrix, idx: np.ndarray) -> None:
         Row indices used to reorder the matrix.
     """
     idx = idx.flatten()
-    assert isinstance(
-        X, scipy.sparse.coo_matrix
-    ), "X must be scipy.sparse.coo_matrix"
+    assert isinstance(X, scipy.sparse.coo_matrix), "X must be scipy.sparse.coo_matrix"
     assert X.shape[1] == idx.shape[0], "idx shape[0] must be X shape[0]"
     idx = np.argsort(idx)
     idx = np.asarray(idx, dtype=X.col.dtype)
@@ -525,7 +508,7 @@ def reorder_cols(X: coo_matrix, idx: np.ndarray) -> None:
 
 
 def reorder_rows_and_cols(X: coo_matrix, idx: np.ndarray) -> None:
-    """ Reorders the columns of the COO sparse matrix given in argument.
+    """Reorders the columns of the COO sparse matrix given in argument.
 
     Parameters
     ----------

@@ -27,7 +27,7 @@ e = 0.25
 exponent = 5
 connection_probabilities = (
     np.array([[4 * e, e, e, e * 2], [e, e, e, e], [2 * e, e, 2 * e, 2 * e]])
-    / 2 ** exponent
+    / 2**exponent
 )
 
 
@@ -39,9 +39,7 @@ for file in dataset_files:
     cari_results_sparse[(n1, n2)].append(results["co_ari"])
     if results["end_time_not_sparse"]:
         cari_results_not_sparse[(n1, n2)].append(results["co_ari_not_sparse"])
-        time_results_not_sparse[(n1, n2)].append(
-            results["end_time_not_sparse"]
-        )
+        time_results_not_sparse[(n1, n2)].append(results["end_time_not_sparse"])
 
 
 xs = sorted(list(time_results_sparse.keys()), key=lambda x: x[0])
@@ -60,9 +58,7 @@ ax.plot(
 )
 xs_value_not_sparse = [
     a * a / 2
-    for a in np.array(
-        [a[0] for a in sorted(list(time_results_not_sparse.keys()))]
-    )
+    for a in np.array([a[0] for a in sorted(list(time_results_not_sparse.keys()))])
 ]
 ax.plot(
     xs_value_not_sparse,

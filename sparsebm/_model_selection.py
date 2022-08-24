@@ -1,5 +1,11 @@
+import logging
+from typing import Any, Tuple, Union, Optional
+
 import numpy as np
+import scipy.sparse as sp
 import matplotlib.pyplot as plt
+from scipy.sparse import spmatrix
+
 from . import SBM, LBM
 from .utils import (
     lbm_merge_group,
@@ -7,10 +13,6 @@ from .utils import (
     lbm_split_group,
     sbm_split_group,
 )
-from typing import Any, Tuple, Union, Optional
-from scipy.sparse import spmatrix
-import scipy.sparse as sp
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +91,7 @@ class ModelSelection:
         graph: Union[spmatrix, np.ndarray],
         symmetric: Optional[bool] = False,
     ) -> Union[LBM, SBM]:
-        """ Perform model selection of the co-clustering.
+        """Perform model selection of the co-clustering.
 
         Parameters
         ----------
@@ -196,7 +198,7 @@ class ModelSelection:
                 )"""
 
     def _explore_strategy(self, strategy: str):
-        """ Perform a splitting or merging strategy.
+        """Perform a splitting or merging strategy.
 
         The splitting strategy stops when the number of classes is greater
         than  min(1.5*number of classes of the best model,
@@ -226,10 +228,7 @@ class ModelSelection:
             else self.model_explored[min(self.model_explored.keys())]
         )
         nnq_best_model = (
-            (
-                pv_model["model"].n_row_clusters
-                + pv_model["model"].n_column_clusters
-            )
+            (pv_model["model"].n_row_clusters + pv_model["model"].n_column_clusters)
             if self._model_type == "LBM"
             else pv_model["model"].n_clusters
         )
@@ -250,21 +249,14 @@ class ModelSelection:
             model_explored[nnq] = model_flag
 
             if self._plot:
-                _plot_merge_split_graph(
-                    self, model_explored, strategy, best_model
-                )
+                _plot_merge_split_graph(self, model_explored, strategy, best_model)
 
-            flag_key = (
-                "merge_explored" if strategy == "merge" else "split_explored"
-            )
+            flag_key = "merge_explored" if strategy == "merge" else "split_explored"
             classes_key = (nnq - 1) if strategy == "merge" else (nnq + 1)
             if model_flag[flag_key]:
                 if classes_key in self.model_explored:
                     models_to_explore.append(self.model_explored[classes_key])
-                    if (
-                        self.model_explored[classes_key]["icl"]
-                        > best_model["icl"]
-                    ):
+                    if self.model_explored[classes_key]["icl"] > best_model["icl"]:
                         best_model = self.model_explored[classes_key]
                         nnq_best_model = (
                             (
@@ -276,9 +268,7 @@ class ModelSelection:
                         )
 
                     logger.info(
-                        "\t Already explored models from {} classes".format(
-                            nnq
-                        )
+                        "\t Already explored models from {} classes".format(nnq)
                     )
                     continue
             model_flag[flag_key] = True
@@ -323,8 +313,7 @@ class ModelSelection:
             if best_models:
                 bfm = best_models[0]
                 nnq_bm = (
-                    bfm["model"].n_row_clusters
-                    + bfm["model"].n_column_clusters
+                    bfm["model"].n_row_clusters + bfm["model"].n_column_clusters
                     if self._model_type == "LBM"
                     else bfm["model"].n_clusters
                 )
@@ -365,7 +354,7 @@ class ModelSelection:
     def _select_and_train_best_model(
         self, model: Union[LBM, SBM], strategy: str, type: int = None
     ) -> Tuple[float, Union[LBM, SBM]]:
-        """ Given model and a strategy, perform all possible merges/splits of
+        """Given model and a strategy, perform all possible merges/splits of
         classes and return the best one.
 
         The algorithm instantiate all merges/splits possible, n best models are
@@ -391,9 +380,7 @@ class ModelSelection:
 
         if self._model_type == "LBM":
             assert type in [0, 1]
-            nb_clusters = (
-                model.n_row_clusters if type == 0 else model.n_column_clusters
-            )
+            nb_clusters = model.n_row_clusters if type == 0 else model.n_column_clusters
             if strategy == "merge" and (
                 (type == 0 and model.n_row_clusters <= 1)
                 or (type == 1 and model.n_column_clusters <= 1)
@@ -545,8 +532,7 @@ def _plot_merge_split_graph(
         nqs = [m["model"].n_row_clusters for m in model_explored.values()]
         nls = [m["model"].n_column_clusters for m in model_explored.values()]
         nqs_prev = [
-            m["model"].n_row_clusters
-            for m in model_selection.model_explored.values()
+            m["model"].n_row_clusters for m in model_selection.model_explored.values()
         ]
         nls_prev = [
             m["model"].n_column_clusters
@@ -598,12 +584,10 @@ def _plot_merge_split_graph(
         nqs = [m["model"].n_clusters for m in model_explored.values()]
         icls = [m["model"].get_ICL() for m in model_explored.values()]
         nqs_prev = [
-            m["model"].n_clusters
-            for m in model_selection.model_explored.values()
+            m["model"].n_clusters for m in model_selection.model_explored.values()
         ]
         icls_prev = [
-            m["model"].get_ICL()
-            for m in model_selection.model_explored.values()
+            m["model"].get_ICL() for m in model_selection.model_explored.values()
         ]
 
         ax.set_xlim((0, max(10, max(nqs), max(nqs_prev))))

@@ -7,10 +7,10 @@ import itertools
 
 def test_sbm():
     np.random.seed(0)
-    n = 10 ** 3
+    n = 2 * 10**3
     nq = 4
     alpha = np.ones(nq) / nq
-    degree_wanted = 20
+    degree_wanted = 100
     pi_sim = np.array(
         [
             [0.04923077, 0.01846154, 0.00615385, 0.03076923],
@@ -19,9 +19,13 @@ def test_sbm():
             [0.03076923, 0.0, 0.01230769, 0.04307692],
         ]
     )
+    pi_sim *= degree_wanted / (pi_sim.mean() * n)
 
     data = generate_SBM_dataset(n, nq, pi_sim, alpha, symmetric=True)
-    X, Y1, = (data["data"], data["cluster_indicator"])
+    (
+        X,
+        Y1,
+    ) = (data["data"], data["cluster_indicator"])
 
     model = SBM(
         nq,
@@ -41,4 +45,4 @@ def test_sbm():
         key=lambda permut: (model.tau_[:, permut] * Y1).sum(),
     )
 
-    assert np.max(np.abs(pi[:, bp][bp, :] - pi_sim)) < 0.04
+    assert np.max(np.abs(pi[:, bp][bp, :] - pi_sim)) < 0.01
