@@ -5,11 +5,11 @@ __licence__ = "MIT"
 version_info = (1, 4)
 __version__ = ".".join(map(str, version_info))
 
-from .lbm import LBM
-from .sbm import SBM
+from ._lbm import LBM
+from ._sbm import SBM
 from .utils import CARI
-from .model_selection import ModelSelection
-from .graph_generator import generate_LBM_dataset, generate_SBM_dataset
+from ._model_selection import ModelSelection
+from ._graph_generator import generate_LBM_dataset, generate_SBM_dataset
 
 import logging
 
