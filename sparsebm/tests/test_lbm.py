@@ -10,7 +10,7 @@ import itertools
 def test_lbm():
     np.random.seed(0)
 
-    F = 10**3
+    F = 2 * 10**3
     n1, n2 = F, int(1.5 * F)
     nq, nl = 3, 4
     alpha_1 = np.ones(nq) / nq
@@ -48,4 +48,4 @@ def test_lbm():
             res.append((np.max(np.abs(pi_sim - pi_3)), permut_ligne, permut_col))
     res.sort()
 
-    assert res[0][0] < 0.07
+    assert res[0][0] < 0.01
