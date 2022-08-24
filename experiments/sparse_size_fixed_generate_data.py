@@ -27,7 +27,7 @@ if not os.path.exists("./experiments/data/size_fixed"):
 ###
 ### Specifying the parameters of the dataset to generate.
 ###
-number_of_rows = int(1 * 10 ** 4)
+number_of_rows = int(1 * 10**4)
 number_of_columns = int(number_of_rows / 2)
 nb_row_clusters, nb_column_clusters = 3, 4
 row_cluster_proportions = (
@@ -58,7 +58,7 @@ for exponent in range(nbexpo):
             number_of_columns,
             nb_row_clusters,
             nb_column_clusters,
-            connection_probabilities / 2 ** exponent,
+            connection_probabilities / 2**exponent,
             row_cluster_proportions,
             column_cluster_proportions,
             sparse=False,
@@ -75,6 +75,4 @@ for exponent in range(nbexpo):
             + str(i)
             + ".pkl"
         )
-        pickle.dump(
-            dataset, open("./experiments/data/size_fixed/" + fname, "wb")
-        )
+        pickle.dump(dataset, open("./experiments/data/size_fixed/" + fname, "wb"))

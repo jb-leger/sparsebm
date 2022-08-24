@@ -113,33 +113,25 @@ class LBM_not_sparse(BaseEstimator):
     @property
     def row_group_membership_probability(self):
         """array_like: Returns the row group membership probabilities"""
-        assert (
-            self.trained_successfully_ == True
-        ), "Model not trained successfully"
+        assert self.trained_successfully_ == True, "Model not trained successfully"
         return self.alpha_1_
 
     @property
     def column_group_membership_probability(self):
         """array_like: Returns the column group membership probabilities"""
-        assert (
-            self.trained_successfully_ == True
-        ), "Model not trained successfully"
+        assert self.trained_successfully_ == True, "Model not trained successfully"
         return self.alpha_2_
 
     @property
     def row_labels(self):
         """array_like: Returns the row labels"""
-        assert (
-            self.trained_successfully_ == True
-        ), "Model not trained successfully"
+        assert self.trained_successfully_ == True, "Model not trained successfully"
         return self.tau_1_.argmax(1)
 
     @property
     def column_labels(self):
         """array_like: Returns the column labels"""
-        assert (
-            self.trained_successfully_ == True
-        ), "Model not trained successfully"
+        assert self.trained_successfully_ == True, "Model not trained successfully"
         return self.tau_2_.argmax(1)
 
     @property
@@ -151,9 +143,7 @@ class LBM_not_sparse(BaseEstimator):
     @property
     def column_predict_proba(self):
         """array_like: Returns the predicted column classes membership probabilities"""
-        assert (
-            self.trained_successfully_ == True
-        ), "Model not trained successfully"
+        assert self.trained_successfully_ == True, "Model not trained successfully"
         return self.tau_2_
 
     @property
@@ -188,9 +178,7 @@ class LBM_not_sparse(BaseEstimator):
         self.trained_successfully_ = False
 
         if self.use_gpu and (
-            not _CUPY_INSTALLED
-            or not _DEFAULT_USE_GPU
-            or not cupy.cuda.is_available()
+            not _CUPY_INSTALLED or not _DEFAULT_USE_GPU or not cupy.cuda.is_available()
         ):
             self.gpu_number = None
             self.use_gpu = False
@@ -232,9 +220,7 @@ class LBM_not_sparse(BaseEstimator):
         float
             value of the ICL criteria.
         """
-        assert (
-            self.trained_successfully_ == True
-        ), "Model not trained successfully"
+        assert self.trained_successfully_ == True, "Model not trained successfully"
         return (
             self.loglikelihood_
             - (self.n_row_clusters - 1) / 2 * np.log(self._nb_rows)
@@ -284,15 +270,7 @@ class LBM_not_sparse(BaseEstimator):
             for run_number in range(self.n_init):
                 if self.verbosity > 0:
                     bar.update(run_number)
-                (
-                    success,
-                    ll,
-                    pi,
-                    alpha_1,
-                    alpha_2,
-                    tau_1,
-                    tau_2,
-                ) = self._fit_single(
+                (success, ll, pi, alpha_1, alpha_2, tau_1, tau_2,) = self._fit_single(
                     X,
                     n1,
                     n2,
@@ -314,9 +292,7 @@ class LBM_not_sparse(BaseEstimator):
                     heappushpop(best_inits, calculation_result)
             if self.verbosity > 0:
                 bar.finish()
-                print(
-                    "---------- START TRAINING BEST INITIALIZATIONS ---------- "
-                )
+                print("---------- START TRAINING BEST INITIALIZATIONS ---------- ")
                 bar = progressbar.ProgressBar(
                     max_value=len(best_inits),
                     widgets=[
@@ -344,15 +320,7 @@ class LBM_not_sparse(BaseEstimator):
                     init[5],
                     init[6],
                 )
-                (
-                    success,
-                    ll,
-                    pi,
-                    alpha_1,
-                    alpha_2,
-                    tau_1,
-                    tau_2,
-                ) = self._fit_single(
+                (success, ll, pi, alpha_1, alpha_2, tau_1, tau_2,) = self._fit_single(
                     X,
                     n1,
                     n2,
@@ -428,14 +396,10 @@ class LBM_not_sparse(BaseEstimator):
         # Repeat EM step until convergence.
         for iteration in range(self.max_iter):
             if early_stop and iteration >= early_stop:
-                ll = self._compute_likelihood(
-                    X, pi, alpha_1, alpha_2, tau_1, tau_2
-                )
+                ll = self._compute_likelihood(X, pi, alpha_1, alpha_2, tau_1, tau_2)
                 break
             if iteration % 10 == 0:
-                ll = self._compute_likelihood(
-                    X, pi, alpha_1, alpha_2, tau_1, tau_2
-                )
+                ll = self._compute_likelihood(X, pi, alpha_1, alpha_2, tau_1, tau_2)
                 if (ll - old_ll) < (self.atol + self.rtol * self._np.abs(ll)):
                     success = True
                     break
@@ -489,12 +453,9 @@ class LBM_not_sparse(BaseEstimator):
         R = tau_2.sum(0).reshape(1, -1)
         Q = X @ tau_2
         l_tau_1 = (
-            (
-                (Q.reshape(n1, 1, nl)) * (self._np.log(pi)).reshape(1, nq, nl)
-            ).sum(2)
+            ((Q.reshape(n1, 1, nl)) * (self._np.log(pi)).reshape(1, nq, nl)).sum(2)
             + (
-                (R - Q).reshape(n1, 1, nl)
-                * self._np.log(1 - pi).reshape(1, nq, nl)
+                (R - Q).reshape(n1, 1, nl) * self._np.log(1 - pi).reshape(1, nq, nl)
             ).sum(2)
             + self._np.log(alpha_1.reshape(1, nq))
         )
@@ -513,12 +474,9 @@ class LBM_not_sparse(BaseEstimator):
         S = (tau_1.T @ X).T
 
         l_tau_2 = (
-            (
-                (S.reshape(n2, nq, 1)) * (self._np.log(pi)).reshape(1, nq, nl)
-            ).sum(1)
+            ((S.reshape(n2, nq, 1)) * (self._np.log(pi)).reshape(1, nq, nl)).sum(1)
             + (
-                (T - S).reshape(n2, nq, 1)
-                * self._np.log(1 - pi).reshape(1, nq, nl)
+                (T - S).reshape(n2, nq, 1) * self._np.log(1 - pi).reshape(1, nq, nl)
             ).sum(1)
             + self._np.log(alpha_2.reshape(1, nl))
         )
@@ -571,8 +529,7 @@ class LBM_not_sparse(BaseEstimator):
                 tau_1.reshape(n1, 1, nq, 1)
                 * tau_2.reshape(1, n2, 1, nl)
                 * (
-                    X.reshape(n1, n2, 1, 1)
-                    * self._np.log(pi.reshape(1, 1, nq, nl))
+                    X.reshape(n1, n2, 1, 1) * self._np.log(pi.reshape(1, 1, nq, nl))
                     + (1 - X.reshape(n1, n2, 1, 1))
                     * self._np.log(1 - pi.reshape(1, 1, nq, nl))
                 )
@@ -619,8 +576,7 @@ class LBM_not_sparse(BaseEstimator):
                 )"""
 
     def copy(self):
-        """Returns a copy of the model.
-        """
+        """Returns a copy of the model."""
         model = LBM(
             self.n_row_clusters,
             self.n_column_clusters,

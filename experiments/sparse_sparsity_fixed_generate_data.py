@@ -38,7 +38,7 @@ e = 0.25
 exponent = 5
 connection_probabilities = (
     np.array([[4 * e, e, e, e * 2], [e, e, e, e], [2 * e, e, 2 * e, 2 * e]])
-    / 2 ** exponent
+    / 2**exponent
 )
 
 
@@ -83,6 +83,4 @@ for n1, n2 in np.stack((number_of_rows, number_of_columns), 1):
         dataset["n2"] = n2
         dataset["exponent"] = exponent
         fname = str(n1) + "_" + str(n2) + "_" + str(i) + ".pkl"
-        pickle.dump(
-            dataset, open("./experiments/data/sparsity_fixed/" + fname, "wb")
-        )
+        pickle.dump(dataset, open("./experiments/data/sparsity_fixed/" + fname, "wb"))

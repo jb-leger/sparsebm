@@ -67,11 +67,11 @@ use_sp = True if "sparsebm" in args["programs"] else False
 use_bm = True if "blockmodels" in args["programs"] else False
 use_bc = True if "blockcluster" in args["programs"] else False
 
-if user_memory >= (16 * 10 ** 9):
+if user_memory >= (16 * 10**9):
     sparsebm_size_limit = 80000
     blockmodels_size_limit = 10000
     blockcluster_size_limit = 20000
-elif user_memory >= (8 * 10 ** 9):
+elif user_memory >= (8 * 10**9):
     sparsebm_size_limit = 40000
     blockmodels_size_limit = 5000
     blockcluster_size_limit = 15000
@@ -144,14 +144,10 @@ def train_with_sparsebm(
     gpu_index=None,
 ):
     results_files_already_done = glob.glob(results_folder + "*.pkl")
-    save_f = (
-        results_folder + dataset_file.split("/")[-1].split(".")[0] + "_sp.pkl"
-    )
+    save_f = results_folder + dataset_file.split("/")[-1].split(".")[0] + "_sp.pkl"
     if use_gpu:
         save_f = (
-            results_folder
-            + dataset_file.split("/")[-1].split(".")[0]
-            + "_sp_gpu.pkl"
+            results_folder + dataset_file.split("/")[-1].split(".")[0] + "_sp_gpu.pkl"
         )
     if save_f in results_files_already_done:
         print("Already Done")
@@ -246,17 +242,13 @@ def train_with_blockmodels(
     best_init = None
     for i, init in enumerate(init_list):
         print(f"Init {i}/{len(init_list)}", end="\r")
-        results = blockmodels.dispatcher(
-            "LBM", init, "bernoulli", network, False
-        )
+        results = blockmodels.dispatcher("LBM", init, "bernoulli", network, False)
         icl_or_ll = results[2][0]
         if icl_or_ll > best_icl:
             best_init = icl_or_ll
             best_init = init
     print("\n Start training best")
-    results = blockmodels.dispatcher(
-        "LBM", best_init, "bernoulli", network, True
-    )
+    results = blockmodels.dispatcher("LBM", best_init, "bernoulli", network, True)
     print("End training best")
     end_resources, end_time = resource_usage(RUSAGE_SELF), timestamp()
     icl = results[2][0]
@@ -285,9 +277,7 @@ def train_with_blockmodels(
     pickle.dump(
         results,
         open(
-            results_folder
-            + dataset_file.split("/")[-1].split(".")[0]
-            + "_bm.pkl",
+            results_folder + dataset_file.split("/")[-1].split(".")[0] + "_bm.pkl",
             "wb",
         ),
     )
@@ -348,9 +338,7 @@ def train_with_blockcluster(
     rowclass = np.array(results.slots["rowclass"])
     colclass = np.array(results.slots["colclass"])
     icl = results.slots["ICLvalue"][0]
-    co_ari = CARI(
-        row_clusters_index, column_clusters_index, rowclass, colclass
-    )
+    co_ari = CARI(row_clusters_index, column_clusters_index, rowclass, colclass)
     """Return `real`, `sys` and `user` elapsed time, like UNIX's command `time`
     You can calculate the amount of used CPU-time used by summing `user`
     and `sys`. `real` is just like the wall clock.
@@ -372,9 +360,7 @@ def train_with_blockcluster(
     pickle.dump(
         results,
         open(
-            results_folder
-            + dataset_file.split("/")[-1].split(".")[0]
-            + "_bc.pkl",
+            results_folder + dataset_file.split("/")[-1].split(".")[0] + "_bc.pkl",
             "wb",
         ),
     )

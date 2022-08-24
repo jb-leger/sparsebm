@@ -12,9 +12,7 @@ sp_lib = defaultdict(list)
 sp_lib_gpu = defaultdict(list)
 bm_lib = defaultdict(list)
 bc_lib = defaultdict(list)
-files = glob.glob(
-    "./experiments/results/benchmark_libraries/size_growing/*.pkl"
-)
+files = glob.glob("./experiments/results/benchmark_libraries/size_growing/*.pkl")
 for file in files:
     r = pickle.load(open(file, "rb"))
     if r["lib"] == "sparsebm":

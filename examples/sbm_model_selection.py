@@ -19,7 +19,7 @@ from sparsebm import generate_SBM_dataset, ModelSelection
 from sparsebm.utils import reorder_rows, ARI
 
 # Specifying the parameters of the dataset to generate.
-number_of_nodes = 10 ** 3
+number_of_nodes = 10**3
 number_of_clusters = 4
 cluster_proportions = (
     np.ones(number_of_clusters) / number_of_clusters
@@ -68,9 +68,7 @@ if sbm_selected.trained_successfully:
         )
     )
     print("The original number of classes was {}".format(number_of_clusters))
-    print(
-        "The model selection picked {} classes".format(sbm_selected.n_clusters)
-    )
+    print("The model selection picked {} classes".format(sbm_selected.n_clusters))
     ari = ARI(clusters_index, sbm_selected.labels)
     print("Adjusted Rand index is {:.2f}".format(ari))
 #
@@ -85,9 +83,7 @@ reorder_rows(reconstructed_matrix, np.argsort(sbm_selected.labels))
 original_matrix = original_matrix.transpose()
 reconstructed_matrix = reconstructed_matrix.transpose()
 
-figure, (ax1, ax2, ax3) = plt.subplots(
-    1, 3, figsize=(8, 5), constrained_layout=True
-)
+figure, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(8, 5), constrained_layout=True)
 # Plotting the original matrix.
 ax1.spy(graph, markersize=0.05, marker="*", c="black")
 ax1.set_title("Original data matrix")
@@ -98,8 +94,6 @@ ax2.set_title("Data matrix reordered \naccording to the\noriginal classes")
 ax2.axis("off")
 # Plotting the matrix reordered by the SBM.
 ax3.spy(reconstructed_matrix, markersize=0.05, marker="*", c="black")
-ax3.set_title(
-    "Data matrix reordered \naccording to the\nclasses given by the SBM"
-)
+ax3.set_title("Data matrix reordered \naccording to the\nclasses given by the SBM")
 ax3.axis("off")
 plt.show()

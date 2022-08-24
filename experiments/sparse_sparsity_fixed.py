@@ -43,12 +43,10 @@ f_prefix = [
 
 nb_row_clusters, nb_column_clusters = 3, 4
 n_init = 100  # Specifying the number of initializations to perform.
-n_iter_early_stop = (
-    20
-)  # Specifying the number of EM-steps to perform on each init.
+n_iter_early_stop = 20  # Specifying the number of EM-steps to perform on each init.
 n_init_total_run = (
-    10
-)  # Specifying the number inits to keep and to train until convergence.
+    10  # Specifying the number inits to keep and to train until convergence.
+)
 
 
 def train_with_both_model(dataset_file, gpu_index, not_sparse):
@@ -58,9 +56,7 @@ def train_with_both_model(dataset_file, gpu_index, not_sparse):
         os.makedirs("./experiments/results/sparsity_fixed")
     print(dataset_file)
 
-    results_files_already_done = glob.glob(
-        "./experiments/results/sparsity_fixed/*.pkl"
-    )
+    results_files_already_done = glob.glob("./experiments/results/sparsity_fixed/*.pkl")
     if (
         "./experiments/results/sparsity_fixed/" + dataset_file.split("/")[-1]
         in results_files_already_done
@@ -181,20 +177,15 @@ def train_with_both_model(dataset_file, gpu_index, not_sparse):
     pickle.dump(
         results,
         open(
-            "./experiments/results/sparsity_fixed/"
-            + dataset_file.split("/")[-1],
+            "./experiments/results/sparsity_fixed/" + dataset_file.split("/")[-1],
             "wb",
         ),
     )
 
 
 for f in f_prefix:
-    dataset_files = glob.glob(
-        "./experiments/data/sparsity_fixed/" + f + "_*.pkl"
-    )
-    if (
-        int(f.split("_")[0]) > limit_size_accepted_by_gpu_sparse
-    ):  # Preserve GPU OOM
+    dataset_files = glob.glob("./experiments/data/sparsity_fixed/" + f + "_*.pkl")
+    if int(f.split("_")[0]) > limit_size_accepted_by_gpu_sparse:  # Preserve GPU OOM
         continue
     not_sparse = (
         True if int(f.split("_")[0]) <= limit_size_accepted_by_gpu else False

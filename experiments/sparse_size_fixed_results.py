@@ -26,24 +26,20 @@ connection_probabilities = np.array(
 for file in dataset_files:
     results = pickle.load(open(file, "rb"))
     time_results_sparse[results["exponent"]].append(results["end_time"])
-    time_results_not_sparse[results["exponent"]].append(
-        results["end_time_not_sparse"]
-    )
+    time_results_not_sparse[results["exponent"]].append(results["end_time_not_sparse"])
 
 xs = np.sort(np.array(list(time_results_sparse.keys())))
 
 ############################ PLOTTING bayes error and Classification error ########################
 def epsilon_to_rate(x):
-    return 1 - (connection_probabilities).mean() / (2 ** x)
+    return 1 - (connection_probabilities).mean() / (2**x)
 
 
 def rate_to_epsilon(x):
     eps = 1e-10
     x2 = x.copy()
     x2[x2 >= 1] = 1 - eps
-    results = -(
-        np.log(1 - x2) - np.log((connection_probabilities).mean())
-    ) / np.log(2)
+    results = -(np.log(1 - x2) - np.log((connection_probabilities).mean())) / np.log(2)
     results[x >= 1] = xs.max()
     return results
 

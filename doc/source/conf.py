@@ -25,9 +25,7 @@ sys.path.insert(0, os.path.abspath("../../"))
 from os import path
 
 here = path.abspath(path.dirname(__file__))
-with open(
-    path.join(here, "../../", "sparsebm", "__init__.py"), encoding="utf-8"
-) as f:
+with open(path.join(here, "../../", "sparsebm", "__init__.py"), encoding="utf-8") as f:
     ast = compile(f.read(), "__init__.py", "exec")
     fake_global = {"__name__": "__main__"}
     try:
